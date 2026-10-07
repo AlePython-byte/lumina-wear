@@ -11,10 +11,13 @@ LuminaWear es una aplicación universitaria para Wear OS enfocada en el diseño 
 
 ## Estado Inicial (LW-001)
 - Proyecto generado correctamente y configurado con Jetpack Compose para Wear OS y Material 3.
-- Pantalla inicial básica funcionando (`AppScaffold`, `ScreenScaffold`, `TransformingLazyColumn`).
+- Pantalla inicial básica integrada (`AppScaffold`, `ScreenScaffold`, `TransformingLazyColumn`). *Nota: Compilación exitosa, pero la ejecución en emulador está pendiente.*
 - Módulo único (`app`) que incluye `play-services-wearable`.
 - No hay integración de backend, Room, IA, Hilt o Retrofit hasta este momento.
 - Proyecto aislado en el directorio `lumina-wear`.
+
+## Estado Actual (LW-002A)
+- Configurado el esquema de colores personalizado (LuminaWearTheme) con fondo negro y controles primarios en color lima (#C8FF37) a través de `androidx.wear.compose.material3`.
 
 ## Instrucciones de Ejecución
 Para ejecutar esta aplicación en un emulador o dispositivo físico Wear OS circular:

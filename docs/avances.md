@@ -18,9 +18,26 @@
 - **(2026-10-06):** Compilación desde PowerShell exitosa: `BUILD SUCCESSFUL in 50s; 36 tareas ejecutadas` usando el comando `.\gradlew.bat :app:assembleDebug --no-daemon --stacktrace`.
   - *Antecedente:* La compilación por terminal fallaba con el error `AndroidLocationsBuildService`. Se resolvió retirando `ANDROID_PREFS_ROOT` únicamente de esa sesión de PowerShell para solucionar el conflicto con `ANDROID_USER_HOME`. La configuración permanente de Windows sigue pendiente.
 - La ejecución en emulador todavía está pendiente de comprobar.
-- La pantalla inicial se mantiene intacta y funcional tal como fue provista por la plantilla inicial de Compose for Wear OS, utilizando componentes como `AppScaffold`, `ScreenScaffold` y `TransformingLazyColumn`.
+- La pantalla inicial se mantiene intacta en su estructura de plantilla, utilizando componentes como `AppScaffold`, `ScreenScaffold` y `TransformingLazyColumn` (la pantalla compila correctamente, pero su visualización real sigue pendiente de comprobación).
 
 **Pendientes / Próximos pasos:**
 - Reemplazar los textos de la pantalla inicial ("More", "Button A", etc.) por recursos en `strings.xml`.
 - Diseñar y construir las pantallas principales del producto (control de luces, brillo, escenas, favoritos).
 - Definir la arquitectura a usar para la integración de funcionalidades más complejas (Voz, IA, inyección de dependencias con Hilt, bases de datos con Room, consumo de APIs con Retrofit).
+
+---
+
+## TAREA LW-002A — Tema visual base de LuminaWear
+
+**Fecha:** 2026-10-06
+
+**Cambios realizados:**
+- Se inspeccionaron `Theme.kt`, `MainActivity.kt` y la configuración de dependencias de UI.
+- Se creó `app/src/main/java/com/alejandro/luminawear/presentation/theme/Color.kt` definiendo el esquema de colores base: fondo negro (`#000000`), color primario lima (`#C8FF37`) y superficies oscuras provisionales (`#1E1E1E`, `#2C2C2C`).
+- Se actualizó el `LuminaWearTheme` en `Theme.kt` para usar `androidx.wear.compose.material3.ColorScheme` con el esquema personalizado, garantizando que el contenido principal resalte en lima y el fondo quede completamente negro.
+- Se mantuvieron la tipografía por defecto y las previews, así como los componentes existentes en `MainActivity.kt`.
+
+**Verificaciones realizadas:**
+- **(2026-10-06):** Compilación tras aplicar el tema en PowerShell exitosa: `BUILD SUCCESSFUL in 34s; 36 tareas ejecutadas` mediante `.\gradlew.bat :app:assembleDebug --no-daemon --stacktrace`.
+- La pantalla de inicio compila con éxito aplicando `LuminaWearTheme`.
+- **Aclaración importante:** Tal como en tareas anteriores, la app se encuentra compilando, pero la ejecución en emulador no se ha efectuado y su verificación sigue estando pendiente.
