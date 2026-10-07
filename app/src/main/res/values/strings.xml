@@ -1,6 +1,8 @@
 <resources>
     <string name="app_name">LuminaWear</string>
-    <string name="header_my_home">MI CASA DEMO</string>
+    <string name="header_my_home">MI CASA</string>
+    <string name="header_rooms">HABITACIONES</string>
+    <string name="header_demo">DEMO</string>
     <string name="lights_counter">%1$d / %2$d</string>
     <string name="lights_on_subtitle">luces encendidas</string>
     <string name="btn_turn_off_all">Apagar todo</string>
@@ -9,9 +11,28 @@
     <string name="card_by_time">POR LA HORA</string>
     <string name="card_rest">Descanso</string>
     <string name="card_room_percent">%1$s · %2$d %%</string>
+
     <string name="room_living">Sala</string>
+    <string name="room_bedroom">Dormitorio</string>
+    <string name="room_study">Estudio</string>
+
+    <string name="light_plafon">Plafón</string>
+    <string name="light_lampara">Lámpara</string>
+    <string name="light_tira">Tira LED</string>
+    <string name="light_techo">Techo</string>
+    <string name="light_mesa">Mesa de noche</string>
+    <string name="light_armario">Armario</string>
+    <string name="light_escritorio">Escritorio</string>
+    <string name="light_ambiente">Luz ambiente</string>
+
+    <string name="light_state_on_percent">Encendida · %1$d %%</string>
+    <string name="light_state_off">Apagada</string>
+    <string name="room_lights_counter">%1$d de %2$d encendidas</string>
+
     <string name="access_rooms">Habitaciones</string>
     <string name="access_scenes">Escenas</string>
     <string name="access_favorites">Favoritos</string>
     <string name="access_voice">Voz</string>
+
+    <string name="btn_home">Inicio</string>
 </resources>

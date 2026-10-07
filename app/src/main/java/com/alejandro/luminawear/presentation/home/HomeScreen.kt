@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -36,6 +36,7 @@ fun HomeScreen(
     lightsOn: Int,
     totalLights: Int,
     onTurnOffAllClick: () -> Unit,
+    onRoomsClick: () -> Unit,
     contentPadding: PaddingValues,
     listState: TransformingLazyColumnState,
     transformationSpec: TransformationSpec
@@ -52,13 +53,21 @@ fun HomeScreen(
                     .transformedHeight(this, transformationSpec),
                 transformation = SurfaceTransformation(transformationSpec)
             ) {
-                Text(
-                    text = stringResource(R.string.header_my_home),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = stringResource(R.string.header_demo),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        text = stringResource(R.string.header_my_home),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
         }
         item {
@@ -97,7 +106,8 @@ fun HomeScreen(
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp)
+                    .padding(vertical = 4.dp)
+                    .heightIn(min = 48.dp)
                     .transformedHeight(this, transformationSpec),
                 transformation = SurfaceTransformation(transformationSpec)
             ) {
@@ -152,7 +162,7 @@ fun HomeScreen(
                 }
             }
         }
-        item { SecondaryAccessButton(stringResource(R.string.access_rooms), this, transformationSpec) }
+        item { SecondaryAccessButton(stringResource(R.string.access_rooms), this, transformationSpec, true, onRoomsClick) }
         item { SecondaryAccessButton(stringResource(R.string.access_scenes), this, transformationSpec) }
         item { SecondaryAccessButton(stringResource(R.string.access_favorites), this, transformationSpec) }
         item { SecondaryAccessButton(stringResource(R.string.access_voice), this, transformationSpec) }
@@ -163,11 +173,13 @@ fun HomeScreen(
 fun SecondaryAccessButton(
     text: String,
     scope: TransformingLazyColumnItemScope,
-    transformationSpec: TransformationSpec
+    transformationSpec: TransformationSpec,
+    isEnabled: Boolean = false,
+    onClick: () -> Unit = {}
 ) {
     Button(
-        onClick = { /* TODO */ },
-        enabled = false,
+        onClick = onClick,
+        enabled = isEnabled,
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
             contentColor = MaterialTheme.colorScheme.onSurface,
@@ -177,11 +189,11 @@ fun SecondaryAccessButton(
         shape = RoundedCornerShape(8.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .height(48.dp)
             .padding(vertical = 4.dp)
+            .heightIn(min = 48.dp)
             .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
             .transformedHeight(scope, transformationSpec),
-        transformation = scope.SurfaceTransformation(transformationSpec)
+        transformation = with(scope) { SurfaceTransformation(transformationSpec) }
     ) {
         Text(text = text)
     }

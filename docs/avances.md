@@ -64,3 +64,23 @@
 - **(2026-10-07):** Compilación exitosa verificada usando `.\gradlew.bat :app:assembleDebug --no-daemon --stacktrace` (`BUILD SUCCESSFUL in 40s; 36 tareas ejecutadas`).
 - Se corrigió un detalle de compilación respecto a la función de extensión `SurfaceTransformation` aplicándola a través del scope (`scope.SurfaceTransformation(...)`) debido a la naturaleza de la API de Material 3 para Wear OS.
 - **Pendiente de comprobación:** La ejecución en emulador no se ha efectuado, por lo cual la correcta visualización e interacción con el diseño no ha sido comprobada visualmente más allá de los estándares sintácticos de Jetpack Compose.
+
+---
+
+## TAREA LW-003 — Habitaciones, detalle de habitación y estado compartido de luces
+
+**Fecha:** 2026-10-07
+
+**Cambios realizados:**
+- Se crearon los modelos estáticos en `RoomsData.kt` para 3 habitaciones y 8 luces, con base en el diseño (Sala, Dormitorio y Estudio) con identificadores fijos y configuraciones base.
+- Se modificó `MainActivity.kt` centralizando el estado (`lightsOnSet`) en una cadena mapeada (`living_plafon,living_lampara,...`) que sobrevive recreaciones mediante `rememberSaveable`.
+- Se introdujo navegación local basada en estados simples (`currentScreen` y `selectedRoomId`), coordinando `HomeScreen`, `RoomsScreen` y `RoomDetailScreen`.
+- Se crearon las vistas `RoomsScreen.kt` y `RoomDetailScreen.kt`, las cuales muestran los contadores dinámicos calculados a partir de los datos únicos ("2 de 3 encendidas", "Encendida · 72 %"). 
+- Se conectó el botón simulado de "Habitaciones" en el inicio y los botones "Inicio" y "Habitaciones" en los retrocesos. Además, se añadió soporte para el botón o gesto del sistema vía `BackHandler` (el gesto real `SwipeToDismiss` nativo de Wear OS sigue pendiente).
+- La gestión de pantallas se movió a `WearApp.kt` para dejar `MainActivity` como un punto de entrada limpio, integrando además `rememberSaveableStateHolder` de manera que cada pantalla mantenga su propio estado de desplazamiento sin compartir un `TransformingLazyColumnState` único ni reiniciarlo accidentalmente.
+- Se separaron los textos "MI CASA" y "DEMO" en dos recursos visuales independientes según las correcciones del header y se ajustó el height de los botones mediante la función correcta `heightIn(min = 48.dp)` ubicando el padding por fuera para no recortar la altura real del botón.
+
+**Verificaciones realizadas:**
+- **(2026-10-07):** Compilación verificada exitosamente usando `.\gradlew.bat :app:assembleDebug --no-daemon --stacktrace` (`BUILD SUCCESSFUL in 17s; 36 tareas: 1 ejecutada, 35 up-to-date`).
+- Todos los componentes y previews pre-configurados en `WearApp.kt` han sido organizados reflejando exactamente el contador inicial sin distorsiones ficticias.
+- **Pendiente:** Compilación verificada; renderizado e interacción pendientes. La ejecución en emulador o AVD físico no ha podido ser comprobada hasta este momento.

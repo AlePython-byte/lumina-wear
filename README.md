@@ -16,12 +16,13 @@ LuminaWear es una aplicación universitaria para Wear OS enfocada en el diseño 
 - No hay integración de backend, Room, IA, Hilt o Retrofit hasta este momento.
 - Proyecto aislado en el directorio `lumina-wear`.
 
-## Estado Actual (LW-002B)
-- Pantalla principal `HomeScreen` implementada siguiendo las especificaciones de Figma.
-- Se configuró un estado local simulado de control de luces (5 de 8 encendidas) manejado en `MainActivity`, que sobrevive a recreaciones gracias a `rememberSaveable`.
-- Al presionar "Apagar todo", el contador cambia a 0 y el botón se deshabilita con el texto "Todo apagado".
-- Se añadieron tarjetas y botones secundarios simulados ("POR LA HORA", "Habitaciones", "Escenas", etc.) con su respectivo esquema de colores confirmado.
-- Textos centralizados en `strings.xml`. La tipografía Roboto Flex y otras interacciones quedan pendientes.
+## Estado Actual (LW-003)
+- Pantalla principal `HomeScreen` funcional con estado local.
+- Navegación local hacia pantallas `RoomsScreen` y `RoomDetailScreen` sin librerías externas.
+- El estado simulado de luces (5 de 8 encendidas) se centralizó a nivel de `MainActivity` manejando un listado unificado de 3 habitaciones y 8 luces (id, estado y nombre); "Apagar todo" apaga las luces reales.
+- El estado sobrevive recreaciones de sistema mediante el uso de representaciones convertidas a cadenas vía `rememberSaveable`.
+- Las pantallas `RoomsScreen` y `RoomDetailScreen` muestran listas de habitaciones o luces y permiten regresar usando los botones o el gesto físico interceptado por `BackHandler`. El gesto SwipeToDismiss propio de Wear OS sigue pendiente.
+- Todos los textos extraídos a `strings.xml` de forma independiente (ej. separando "MI CASA" y "DEMO").
 
 ## Instrucciones de Ejecución
 Para ejecutar esta aplicación en un emulador o dispositivo físico Wear OS circular:
@@ -35,7 +36,7 @@ Para ejecutar esta aplicación en un emulador o dispositivo físico Wear OS circ
 3. **Ejecutar la app:**
    - En Android Studio, selecciona el dispositivo virtual de Wear OS en el menú desplegable de ejecución.
    - Haz clic en el botón **Run 'app'** (o presiona `Shift + F10`).
-   - *Nota (2026-10-06):* La compilación desde PowerShell es exitosa (`BUILD SUCCESSFUL in 50s; 36 tareas ejecutadas`) usando el comando `.\gradlew.bat :app:assembleDebug --no-daemon --stacktrace`. Anteriormente fallaba por un error vinculado a `AndroidLocationsBuildService`; esto se resolvió retirando `ANDROID_PREFS_ROOT` únicamente de esa sesión de PowerShell para evitar el conflicto con `ANDROID_USER_HOME`. La configuración permanente en Windows sigue pendiente.
+   - *Nota (2026-10-07):* La compilación desde PowerShell es exitosa (`BUILD SUCCESSFUL in 39s; 36 tareas ejecutadas: 13 executed, 23 up-to-date`). Se retiró `ANDROID_PREFS_ROOT` en esa sesión de PowerShell para evitar el conflicto con `ANDROID_USER_HOME`.
 
 ## Decisiones y Problemas Pendientes
 - La versión de `androidx.wear.compose:compose-material3` está definida en `1.5.6`. Se mantendrá porque es la generada por la plantilla y compila correctamente.
