@@ -35,4 +35,13 @@
     <string name="access_voice">Voz</string>
 
     <string name="btn_home">Inicio</string>
+
+    <string name="light_control_title">%1$s · %2$s</string>
+    <string name="light_control_brightness">Brillo</string>
+    <string name="light_control_decrease">Bajar brillo</string>
+    <string name="light_control_increase">Subir brillo</string>
+    <string name="light_control_off_state">—</string>
+    <string name="btn_turn_on">Encender</string>
+    <string name="btn_turn_off">Apagar</string>
+    <string name="btn_back_to_room">Volver a %1$s</string>
 </resources>

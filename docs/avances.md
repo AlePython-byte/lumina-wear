@@ -84,3 +84,22 @@
 - **(2026-10-07):** Compilación verificada exitosamente usando `.\gradlew.bat :app:assembleDebug --no-daemon --stacktrace` (`BUILD SUCCESSFUL in 17s; 36 tareas: 1 ejecutada, 35 up-to-date`).
 - Todos los componentes y previews pre-configurados en `WearApp.kt` han sido organizados reflejando exactamente el contador inicial sin distorsiones ficticias.
 - **Pendiente:** Compilación verificada; renderizado e interacción pendientes. La ejecución en emulador o AVD físico no ha podido ser comprobada hasta este momento.
+
+---
+
+## TAREA LW-004 — Control individual de luces y brillo simulado
+
+**Fecha:** 2026-10-07
+
+**Cambios realizados:**
+- Se amplió la persistencia del estado en `LightStateHolder.kt` mediante `rememberSaveable` serializado, registrando el estado de encendido y un porcentaje de intensidad por cada luz y reaccionando a la manipulación en tiempo real.
+- Las luces predeterminadamente apagadas se instanciaron con 50% de brillo guardado, lo que les permite recordar un nivel cuando se les encienda.
+- Se habilitó la lista de luces por habitación en `RoomDetailScreen.kt`, conectando con el destino `LIGHT_CONTROL` bajo `WearApp.kt`. Se proveen previews que demuestran el filtrado real.
+- Se implementó `LightControlScreen.kt` como la interfaz individual de las luces que dibuja un dial de brillo semicircular con un arco usando `Canvas` nativo, excluyendo imágenes quemadas.
+- Esta pantalla permite subir o bajar brillo en fracciones de 10 (con límites de rango) y provee de las respuestas semánticas elementales en Compose sin acoplar lógicas exclusivas del Wear OS.
+- Todos los textos complementarios (ej. "Bajar brillo", "Volver a Sala") han sido inyectados al archivo `strings.xml`.
+
+**Verificaciones realizadas:**
+- **(2026-10-07):** Compilación verificada exitosamente usando `.\gradlew.bat :app:assembleDebug --no-daemon --stacktrace` (`BUILD SUCCESSFUL in 1m 6s`).
+- Todos los componentes renderizan adecuadamente sus previews en el árbol composable sin dependencias extrañas y manteniendo la estabilidad del Canvas.
+- **Pendiente:** Al igual que en todos los pasos previos, la renderización visual en emulador o reloj físico está pendiente. El estado y la gestión visual en los rangos y el control fueron construidos en base a la inspección sintáctica, por lo cual la validación real en pantalla dependerá de que la interacción en emulador o AVD se reactive.

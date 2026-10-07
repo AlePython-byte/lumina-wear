@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,12 +30,14 @@ import androidx.wear.compose.material3.lazy.TransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
 import com.alejandro.luminawear.R
 import com.alejandro.luminawear.presentation.models.Light
+import com.alejandro.luminawear.presentation.state.LightStateHolder
 
 @Composable
 fun RoomDetailScreen(
     roomNameRes: Int,
     lights: List<Light>,
-    isLightOn: (String) -> Boolean,
+    lightStateHolder: LightStateHolder,
+    onLightClick: (String) -> Unit,
     onBackClick: () -> Unit,
     contentPadding: PaddingValues,
     listState: TransformingLazyColumnState,
@@ -74,11 +75,12 @@ fun RoomDetailScreen(
         
         items(lights.size) { index ->
             val light = lights[index]
-            val isOn = isLightOn(light.id)
+            val state = lightStateHolder.states[light.id]
+            val isOn = state?.isOn == true
+            val brightness = state?.brightness ?: light.defaultBrightness
             
             Card(
-                onClick = { /* Pending detail implementation */ },
-                enabled = false,
+                onClick = { onLightClick(light.id) },
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer
                 ),
@@ -98,9 +100,9 @@ fun RoomDetailScreen(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.padding(vertical = 2.dp))
                     Text(
-                        text = if (isOn) stringResource(R.string.light_state_on_percent, light.defaultBrightness) 
+                        text = if (isOn) stringResource(R.string.light_state_on_percent, brightness) 
                                else stringResource(R.string.light_state_off),
                         fontSize = 12.sp,
                         color = if (isOn) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
