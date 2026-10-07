@@ -41,3 +41,26 @@
 - **(2026-10-06):** Compilación tras aplicar el tema en PowerShell exitosa: `BUILD SUCCESSFUL in 34s; 36 tareas ejecutadas` mediante `.\gradlew.bat :app:assembleDebug --no-daemon --stacktrace`.
 - La pantalla de inicio compila con éxito aplicando `LuminaWearTheme`.
 - **Aclaración importante:** Tal como en tareas anteriores, la app se encuentra compilando, pero la ejecución en emulador no se ha efectuado y su verificación sigue estando pendiente.
+
+---
+
+## TAREA LW-002B — Pantalla Inicio de LuminaWear con estado local simulado
+
+**Fecha:** 2026-10-07
+
+**Cambios realizados:**
+- Se centralizaron los textos visibles del diseño en `strings.xml`.
+- Se completó el esquema de color confirmado por Figma en `Color.kt` y `Theme.kt`, añadiendo `SurfaceDark` (#101010), `BorderDark` (#363636), `TextPrimary` (#F4F4F0) y `TextSecondary` (#96968E).
+- Se creó el componente `HomeScreen.kt` usando la estructura de `TransformingLazyColumn`. Éste despliega:
+  - Encabezado con "MI CASA DEMO".
+  - Contador centralizado formateado con acento lima.
+  - Botón principal de "Apagar todo" adaptativo al estado.
+  - Tarjeta de accesos "POR LA HORA" y botones secundarios simulados ("Habitaciones", "Escenas", etc.), deshabilitados intencionalmente sin callbacks vacíos para esperar funcionalidad futura.
+- En `MainActivity.kt`, se sustituyó la pantalla de ejemplo genérica por `HomeScreen`.
+- Se integró `rememberSaveable` en `MainActivity` para gestionar el estado del contador de luces (de 5 encendidas a 0), y pasar el estado y sus callbacks como parámetros a la UI separando la lógica del componente visual.
+- Se mantuvieron previews predefinidas que ilustran la interfaz con las luces parcialmente encendidas y apagadas por completo.
+
+**Verificaciones realizadas:**
+- **(2026-10-07):** Compilación exitosa verificada usando `.\gradlew.bat :app:assembleDebug --no-daemon --stacktrace` (`BUILD SUCCESSFUL in 40s; 36 tareas ejecutadas`).
+- Se corrigió un detalle de compilación respecto a la función de extensión `SurfaceTransformation` aplicándola a través del scope (`scope.SurfaceTransformation(...)`) debido a la naturaleza de la API de Material 3 para Wear OS.
+- **Pendiente de comprobación:** La ejecución en emulador no se ha efectuado, por lo cual la correcta visualización e interacción con el diseño no ha sido comprobada visualmente más allá de los estándares sintácticos de Jetpack Compose.

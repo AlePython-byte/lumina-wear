@@ -1,4 +1,17 @@
 <resources>
     <string name="app_name">LuminaWear</string>
-    <string name="hello_world">Hello, %1$s!</string>
+    <string name="header_my_home">MI CASA DEMO</string>
+    <string name="lights_counter">%1$d / %2$d</string>
+    <string name="lights_on_subtitle">luces encendidas</string>
+    <string name="btn_turn_off_all">Apagar todo</string>
+    <string name="btn_all_off">Todo apagado</string>
+    <string name="help_swipe_more">Desliza para más ↓</string>
+    <string name="card_by_time">POR LA HORA</string>
+    <string name="card_rest">Descanso</string>
+    <string name="card_room_percent">%1$s · %2$d %%</string>
+    <string name="room_living">Sala</string>
+    <string name="access_rooms">Habitaciones</string>
+    <string name="access_scenes">Escenas</string>
+    <string name="access_favorites">Favoritos</string>
+    <string name="access_voice">Voz</string>
 </resources>

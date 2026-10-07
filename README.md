@@ -16,8 +16,12 @@ LuminaWear es una aplicación universitaria para Wear OS enfocada en el diseño 
 - No hay integración de backend, Room, IA, Hilt o Retrofit hasta este momento.
 - Proyecto aislado en el directorio `lumina-wear`.
 
-## Estado Actual (LW-002A)
-- Configurado el esquema de colores personalizado (LuminaWearTheme) con fondo negro y controles primarios en color lima (#C8FF37) a través de `androidx.wear.compose.material3`.
+## Estado Actual (LW-002B)
+- Pantalla principal `HomeScreen` implementada siguiendo las especificaciones de Figma.
+- Se configuró un estado local simulado de control de luces (5 de 8 encendidas) manejado en `MainActivity`, que sobrevive a recreaciones gracias a `rememberSaveable`.
+- Al presionar "Apagar todo", el contador cambia a 0 y el botón se deshabilita con el texto "Todo apagado".
+- Se añadieron tarjetas y botones secundarios simulados ("POR LA HORA", "Habitaciones", "Escenas", etc.) con su respectivo esquema de colores confirmado.
+- Textos centralizados en `strings.xml`. La tipografía Roboto Flex y otras interacciones quedan pendientes.
 
 ## Instrucciones de Ejecución
 Para ejecutar esta aplicación en un emulador o dispositivo físico Wear OS circular:
@@ -35,5 +39,5 @@ Para ejecutar esta aplicación en un emulador o dispositivo físico Wear OS circ
 
 ## Decisiones y Problemas Pendientes
 - La versión de `androidx.wear.compose:compose-material3` está definida en `1.5.6`. Se mantendrá porque es la generada por la plantilla y compila correctamente.
-- Los textos base todavía no están centralizados en `strings.xml`. En el futuro, se refactorizará para soportar internacionalización (i18n).
+- La familia tipográfica Roboto Flex sigue pendiente de integración.
 - La ejecución en emulador todavía está pendiente de comprobar.

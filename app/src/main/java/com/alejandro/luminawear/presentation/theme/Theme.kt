@@ -6,17 +6,19 @@ import androidx.wear.compose.material3.MaterialTheme
 
 val luminaColorPalette = ColorScheme(
     primary = LimeMain,
-    onPrimary = DarkText,
+    onPrimary = Black,
     primaryContainer = LimeMain,
-    onPrimaryContainer = DarkText,
-    secondary = DarkSurfaceVariant,
-    onSecondary = LightText,
-    secondaryContainer = DarkSurfaceVariant,
-    onSecondaryContainer = LightText,
+    onPrimaryContainer = Black,
+    secondary = SurfaceDark,
+    onSecondary = TextPrimary,
+    secondaryContainer = SurfaceDark,
+    onSecondaryContainer = TextPrimary,
     background = Black,
-    onBackground = LightText,
-    surfaceContainer = DarkSurface,
-    onSurface = LightText,
+    onBackground = TextPrimary,
+    surfaceContainer = SurfaceDark,
+    onSurface = TextPrimary,
+    onSurfaceVariant = TextSecondary,
+    outline = BorderDark,
     error = ErrorColor,
     onError = Black
 )
