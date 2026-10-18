@@ -1,0 +1,55 @@
+<resources>
+    <string name="app_name">LuminaWear</string>
+    <string name="header_my_home">MY HOME</string>
+    <string name="header_rooms">ROOMS</string>
+    <string name="header_demo">DEMO</string>
+    <string name="lights_counter">%1$d / %2$d</string>
+    <plurals name="lights_on_subtitle">
+        <item quantity="one">light on</item>
+        <item quantity="other">lights on</item>
+    </plurals>
+    <string name="btn_turn_off_all">Turn all off</string>
+    <string name="btn_all_off">All off</string>
+    <string name="help_swipe_more">Swipe for more ↓</string>
+    <string name="card_by_time">BY TIME OF DAY</string>
+    <string name="card_rest">Rest</string>
+    <string name="card_room_percent">%1$s · %2$d %%</string>
+
+    <string name="room_living">Living room</string>
+    <string name="room_bedroom">Bedroom</string>
+    <string name="room_study">Study</string>
+
+    <string name="light_plafon">Ceiling light</string>
+    <string name="light_lampara">Lamp</string>
+    <string name="light_tira">LED strip</string>
+    <string name="light_techo">Ceiling</string>
+    <string name="light_mesa">Nightstand</string>
+    <string name="light_armario">Closet</string>
+    <string name="light_escritorio">Desk</string>
+    <string name="light_ambiente">Ambient light</string>
+
+    <string name="light_state_on_percent">On · %1$d %%</string>
+    <string name="light_state_off">Off</string>
+    <string name="room_lights_counter">%1$d of %2$d on</string>
+
+    <string name="access_rooms">Rooms</string>
+    <string name="access_scenes">Scenes</string>
+    <string name="access_favorites">Favorites</string>
+    <string name="access_voice">Voice</string>
+
+    <string name="btn_home">Home</string>
+
+    <string name="light_control_title">%1$s · %2$s</string>
+    <string name="light_control_brightness">Brightness</string>
+    <string name="light_control_decrease">Decrease brightness</string>
+    <string name="light_control_increase">Increase brightness</string>
+    <string name="light_control_off_state">—</string>
+    <string name="light_control_off_accessible">Light off</string>
+    <string name="light_control_brightness_a11y">Brightness, %1$d percent</string>
+    <string name="light_control_brightness_pct">%1$d%%</string>
+    <string name="btn_decrease">−</string>
+    <string name="btn_increase">+</string>
+    <string name="btn_turn_on">Turn on</string>
+    <string name="btn_turn_off">Turn off</string>
+    <string name="btn_back_to_room">Back to %1$s</string>
+</resources>

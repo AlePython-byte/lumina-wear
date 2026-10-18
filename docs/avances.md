@@ -146,3 +146,35 @@
 - TalkBack real.
 - Texto ampliado (font_scale 1.3).
 - Tamaños de pantalla 192 dp y 240 dp.
+
+
+---
+
+## TAREA LW-006 — Textos visibles a recursos (español por defecto + inglés)
+
+**Fecha:** 2026-10-18
+
+**Implementado:**
+- Auditoría: no hay literales visibles en `.kt`. Los literales restantes son IDs estables (`"living_plafon"`, `"living_room"`...), claves de navegación y el formato interno del saver. No se migró nada desde Kotlin.
+- Nuevo `res/values-en/strings.xml` con las mismas claves y placeholders que `values/strings.xml`. Nombres de habitaciones y luces salen de `nameRes` en ambos idiomas.
+- `lights_on_subtitle` pasó de `<string>` a `<plurals>` (`luz encendida` / `luces encendidas`; `light on` / `lights on`) y `HomeScreen.kt` usa `pluralStringResource` con `lightsOn`.
+- `room_lights_counter` se mantiene como string con placeholders (`%1$d de %2$d encendidas`), sin concatenar fragmentos.
+- Dial de brillo: el número grande ya usaba `light_control_brightness_pct` (`%1$d%%`, sin espacio). El Text y el `contentDescription` compartían la misma variable; ahora `brightnessText` (pct) es el texto visible y `brightnessDesc` (`light_control_brightness_a11y`: "Brillo, %1$d por ciento" / "Brightness, %1$d percent") es el `contentDescription`, con `semantics(mergeDescendants = true)` intacto.
+- `light_control_title` sí se usa (`LightControlScreen.kt`, encabezado "luz · habitación"), por lo que se conserva en ambos archivos.
+- `app_name` está en recursos; el Manifest no se editó.
+
+**Claves finales:** 44 por idioma (43 `<string>` + 1 `<plurals>`).
+
+**Estados:**
+- Implementado: sí.
+- Compilado: sí, `BUILD SUCCESSFUL in 42s` con `.\gradlew.bat :app:assembleDebug --no-daemon --stacktrace`.
+- Preview renderizado: no.
+- Instalado: no.
+- Probado: no (lo prueba Alejandro).
+
+**Verificaciones:** comparación por script de `values/` y `values-en/`: mismo conjunto de 44 claves y mismos placeholders por clave.
+
+**Sin migrar / notas:**
+- Símbolos `−`, `+`, `—` y `DEMO` / `LuminaWear`: iguales en ambos idiomas, se mantienen como recursos.
+- Los porcentajes de listas, tarjetas y etiquetas ("Sala · 30 %") conservan el espacio, como en Figma.
+- Sobre el "80 %" con espacio visto en el emulador: el código ya usaba el string sin espacio, así que el APK instalado probablemente era anterior. Falta confirmarlo en el emulador con esta compilación.

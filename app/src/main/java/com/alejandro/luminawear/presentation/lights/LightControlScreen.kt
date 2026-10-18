@@ -62,7 +62,8 @@ fun LightControlScreen(
     val decreaseDesc = stringResource(R.string.light_control_decrease)
     val increaseDesc = stringResource(R.string.light_control_increase)
     val offDesc = stringResource(R.string.light_control_off_accessible)
-    val brightnessDesc = stringResource(R.string.light_control_brightness_pct, brightness)
+    val brightnessText = stringResource(R.string.light_control_brightness_pct, brightness)
+    val brightnessDesc = stringResource(R.string.light_control_brightness_a11y, brightness)
 
     TransformingLazyColumn(
         contentPadding = contentPadding,
@@ -152,7 +153,7 @@ fun LightControlScreen(
                     }
                 ) {
                     Text(
-                        text = if (isOn) brightnessDesc else stringResource(R.string.light_control_off_state),
+                        text = if (isOn) brightnessText else stringResource(R.string.light_control_off_state),
                         fontSize = 48.sp,
                         fontWeight = FontWeight.Black,
                         color = if (isOn) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant
