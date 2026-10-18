@@ -103,3 +103,46 @@
 - **(2026-10-07):** Compilación verificada exitosamente usando `.\gradlew.bat :app:assembleDebug --no-daemon --stacktrace` (`BUILD SUCCESSFUL in 1m 6s`).
 - Todos los componentes renderizan adecuadamente sus previews en el árbol composable sin dependencias extrañas y manteniendo la estabilidad del Canvas.
 - **Pendiente:** Al igual que en todos los pasos previos, la renderización visual en emulador o reloj físico está pendiente. El estado y la gestión visual en los rangos y el control fueron construidos en base a la inspección sintáctica, por lo cual la validación real en pantalla dependerá de que la interacción en emulador o AVD se reactive.
+
+---
+
+## TAREA LW-005 — Cierre de defectos LW-004
+
+**Fecha:** 2026-10-18
+
+**Defectos corregidos:**
+
+- **D1 (Brillo con luz apagada):** `setBrightness` en `LightStateHolder.kt` ahora retorna inmediatamente si `current.isOn` es falso. No hay llamadores que invocaran `setBrightness` antes de encender la luz. `turnOffAll()` y `setLightOn()` ya preservaban el brillo correctamente.
+
+- **D2 (Tamaños fijos en LightControlScreen):** El `Box` ya no tiene `.height(120.dp)` y envuelve su contenido. El `Canvas` usa `fillMaxWidth().widthIn(max = 180.dp).aspectRatio(2f)`, conservando el tamaño de referencia en relojes grandes y adaptándose a los pequeños. El arco calcula `inset = strokeWidth / 2` y `arcSize = Size(W - strokeWidth, W - strokeWidth)` para que el trazo no se recorte en pantallas circulares. Los botones −/+ usan `.widthIn(min = 56.dp).heightIn(min = 48.dp)`.
+
+- **D3 (Accesibilidad del indicador):** El `Column` del indicador usa `.semantics(mergeDescendants = true)`, evitando la doble lectura del valor. La descripción de estado apagado usa el nuevo string `light_control_off_accessible` ("Luz apagada") en lugar del símbolo "—". Los botones −/+ ya tenían `contentDescription` con los strings `light_control_decrease`/`light_control_increase`. El botón de encendido/apagado muestra texto visible, por lo que no requiere `contentDescription` redundante.
+
+- **D4 (Textos en Kotlin):** El porcentaje usa el nuevo string `light_control_brightness_pct` (`%1$d%%`, sin espacio como en Figma), derivado como `brightnessDesc` en el scope composable. Los símbolos −/+ usan los nuevos strings `btn_decrease` y `btn_increase`.
+
+- **D5 (Navegación con IDs inválidos):** La pantalla `LIGHT_CONTROL` con `light == null` navega a Habitaciones dentro de `LaunchedEffect` y no renderiza nada en el frame de transición. La pantalla `ROOM_DETAIL` con `room == null` hace lo mismo hacia Habitaciones. El `onBackClick` desde una luz ahora también actualiza `selectedRoomId = light.roomId` antes de navegar. El `BackHandler` para `LIGHT_CONTROL` también deriva la habitación de `light.roomId`. `ROOM_DETAIL` válido usa `room.nameRes` directamente sin fallback.
+
+- **D6 (Saver de LightStateHolder):** El `restore` parte del estado inicial por defecto (misma lógica que `rememberLightStateHolder`) y sobrepone solo las entradas que superan todas las validaciones: `parts.size >= 3`, `isOnFlag` solo "0"/"1", `brightness` con `toIntOrNull()` en rango 1–100, e `id` existente en `appLights`. Ninguna luz puede quedar sin estado.
+
+**Verificaciones realizadas:**
+- **(2026-10-18):** `BUILD SUCCESSFUL in 48s; 36 tareas: 16 ejecutadas, 20 up-to-date` — `.\gradlew.bat :app:assembleDebug --no-daemon --stacktrace`.
+- **Histórico:** durante la sesión inicial de la tarea el emulador `emulator-5554` estaba disponible (`device`) pero se desconectó antes de poder instalar, por lo que en ese momento no se tomaron capturas. Esa limitación ya no está vigente: ver instalación y pruebas manuales más abajo.
+- **Instalado:** sí, en el emulador (instalado por Alejandro).
+- **Probado manualmente por Alejandro (2026-10-18):**
+  - Recorrido Inicio → Habitaciones → Sala → luz → +/− → apagar → volver: OK.
+  - D5: Dormitorio → Techo → atrás vuelve a Dormitorio: OK.
+  - Capturas del arco con la luz encendida (80%) y apagada: extremos redondeados completos y sin recortes en pantalla redonda: OK.
+  - Volcado de accesibilidad: un solo nodo "80 %" para el indicador y descripciones "Bajar brillo"/"Subir brillo": OK.
+
+**Observaciones:**
+- El número del dial se ve "80 %" con espacio (Figma: "80%") y la descripción accesible no incluye la palabra "Brillo". Ambos se corrigen en LW-006.
+- La hora del sistema se superpone al arco. Se revisa en LW-011.
+
+**Afirmaciones previas sin demostración detectadas en avances.md:**
+- LW-004: "Todos los componentes renderizan adecuadamente sus previews en el árbol composable" — formulado como hecho verificado, pero en ninguna tarea se registró apertura del panel de previews en Android Studio ni renderizado real.
+- LW-001 a LW-004: el emulador figura como "pendiente" en todos los pasos, nunca como completado.
+
+**Pendientes:**
+- TalkBack real.
+- Texto ampliado (font_scale 1.3).
+- Tamaños de pantalla 192 dp y 240 dp.
