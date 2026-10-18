@@ -41,6 +41,10 @@
     <string name="light_control_decrease">Bajar brillo</string>
     <string name="light_control_increase">Subir brillo</string>
     <string name="light_control_off_state">—</string>
+    <string name="light_control_off_accessible">Luz apagada</string>
+    <string name="light_control_brightness_pct">%1$d%%</string>
+    <string name="btn_decrease">−</string>
+    <string name="btn_increase">+</string>
     <string name="btn_turn_on">Encender</string>
     <string name="btn_turn_off">Apagar</string>
     <string name="btn_back_to_room">Volver a %1$s</string>

@@ -29,7 +29,7 @@ class LightStateHolder(
 
     fun setBrightness(id: String, brightness: Int) {
         val current = _states[id] ?: return
-        // Range 1 to 100
+        if (!current.isOn) return
         val clamped = brightness.coerceIn(1, 100)
         _states[id] = current.copy(brightness = clamped)
     }
@@ -53,15 +53,25 @@ class LightStateHolder(
                 }
             },
             restore = { savedString ->
-                if (savedString.isEmpty()) {
-                    LightStateHolder(emptyMap())
-                } else {
-                    val map = savedString.split(",").associate { entry ->
+                val validIds = appLights.map { it.id }.toSet()
+                val initialOnIds = setOf("living_plafon", "living_lampara", "bed_techo", "bed_mesa", "study_escritorio")
+                val base = appLights.associate { light ->
+                    val isOn = light.id in initialOnIds
+                    light.id to LightState(isOn = isOn, brightness = if (isOn) light.defaultBrightness else 50)
+                }.toMutableMap()
+                if (savedString.isNotEmpty()) {
+                    savedString.split(",").forEach { entry ->
                         val parts = entry.split(":")
-                        parts[0] to LightState(parts[1] == "1", parts[2].toInt())
+                        if (parts.size < 3) return@forEach
+                        val id = parts[0]
+                        if (id !in validIds) return@forEach
+                        if (parts[1] != "0" && parts[1] != "1") return@forEach
+                        val br = parts[2].toIntOrNull() ?: return@forEach
+                        if (br !in 1..100) return@forEach
+                        base[id] = LightState(isOn = parts[1] == "1", brightness = br)
                     }
-                    LightStateHolder(map)
                 }
+                LightStateHolder(base)
             }
         )
     }

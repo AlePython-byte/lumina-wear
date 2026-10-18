@@ -2,6 +2,7 @@ package com.alejandro.luminawear.presentation
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -40,7 +41,11 @@ fun WearApp() {
 
     BackHandler(currentScreen != ScreenType.HOME.name) {
         when (currentScreen) {
-            ScreenType.LIGHT_CONTROL.name -> currentScreen = ScreenType.ROOM_DETAIL.name
+            ScreenType.LIGHT_CONTROL.name -> {
+                val backLight = appLights.firstOrNull { it.id == selectedLightId }
+                if (backLight != null) selectedRoomId = backLight.roomId
+                currentScreen = ScreenType.ROOM_DETAIL.name
+            }
             ScreenType.ROOM_DETAIL.name -> currentScreen = ScreenType.ROOMS.name
             ScreenType.ROOMS.name -> currentScreen = ScreenType.HOME.name
         }
@@ -93,31 +98,37 @@ fun WearApp() {
                         }
                         ScreenType.ROOM_DETAIL.name -> {
                             val room = appRooms.firstOrNull { it.id == selectedRoomId }
-                            val roomLights = appLights.filter { it.roomId == selectedRoomId }
-                            
-                            RoomDetailScreen(
-                                roomNameRes = room?.nameRes ?: R.string.room_living,
-                                lights = roomLights,
-                                lightStateHolder = lightStateHolder,
-                                onLightClick = { lightId ->
-                                    selectedLightId = lightId
-                                    currentScreen = ScreenType.LIGHT_CONTROL.name
-                                },
-                                onBackClick = { currentScreen = ScreenType.ROOMS.name },
-                                contentPadding = contentPadding,
-                                listState = listState,
-                                transformationSpec = transformationSpec
-                            )
+                            if (room == null) {
+                                LaunchedEffect(selectedRoomId) {
+                                    currentScreen = ScreenType.ROOMS.name
+                                }
+                            } else {
+                                val roomLights = appLights.filter { it.roomId == selectedRoomId }
+                                RoomDetailScreen(
+                                    roomNameRes = room.nameRes,
+                                    lights = roomLights,
+                                    lightStateHolder = lightStateHolder,
+                                    onLightClick = { lightId ->
+                                        selectedLightId = lightId
+                                        currentScreen = ScreenType.LIGHT_CONTROL.name
+                                    },
+                                    onBackClick = { currentScreen = ScreenType.ROOMS.name },
+                                    contentPadding = contentPadding,
+                                    listState = listState,
+                                    transformationSpec = transformationSpec
+                                )
+                            }
                         }
                         ScreenType.LIGHT_CONTROL.name -> {
                             val light = appLights.firstOrNull { it.id == selectedLightId }
                             if (light == null) {
-                                // Fallback
-                                currentScreen = ScreenType.ROOMS.name
+                                LaunchedEffect(selectedLightId) {
+                                    currentScreen = ScreenType.ROOMS.name
+                                }
                             } else {
                                 val room = appRooms.firstOrNull { it.id == light.roomId }
                                 val state = lightStateHolder.states[light.id] ?: LightState(false, 50)
-                                
+
                                 LightControlScreen(
                                     light = light,
                                     roomNameRes = room?.nameRes ?: R.string.room_living,
@@ -125,7 +136,10 @@ fun WearApp() {
                                     brightness = state.brightness,
                                     onBrightnessChange = { newBr -> lightStateHolder.setBrightness(light.id, newBr) },
                                     onTogglePower = { lightStateHolder.setLightOn(light.id, !state.isOn) },
-                                    onBackClick = { currentScreen = ScreenType.ROOM_DETAIL.name },
+                                    onBackClick = {
+                                        selectedRoomId = light.roomId
+                                        currentScreen = ScreenType.ROOM_DETAIL.name
+                                    },
                                     contentPadding = contentPadding,
                                     listState = listState,
                                     transformationSpec = transformationSpec

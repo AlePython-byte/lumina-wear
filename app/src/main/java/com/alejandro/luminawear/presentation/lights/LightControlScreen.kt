@@ -8,12 +8,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -61,7 +61,8 @@ fun LightControlScreen(
     
     val decreaseDesc = stringResource(R.string.light_control_decrease)
     val increaseDesc = stringResource(R.string.light_control_increase)
-    val offDesc = stringResource(R.string.light_control_off_state)
+    val offDesc = stringResource(R.string.light_control_off_accessible)
+    val brightnessDesc = stringResource(R.string.light_control_brightness_pct, brightness)
 
     TransformingLazyColumn(
         contentPadding = contentPadding,
@@ -100,28 +101,34 @@ fun LightControlScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(120.dp)
                     .padding(vertical = 8.dp)
                     .transformedHeight(this, transformationSpec),
                 contentAlignment = Alignment.Center
             ) {
                 // Semicircular Canvas
-                Canvas(modifier = Modifier.size(width = 180.dp, height = 90.dp)) {
+                Canvas(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = 180.dp)
+                        .aspectRatio(2f)
+                ) {
                     val strokeWidth = 12.dp.toPx()
                     val style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-                    val arcRect = Size(size.width, size.height * 2)
-                    
+                    val inset = strokeWidth / 2f
+                    val arcSize = Size(size.width - strokeWidth, size.width - strokeWidth)
+                    val arcOffset = Offset(inset, inset)
+
                     // Background track
                     drawArc(
                         color = arcColorTrack,
                         startAngle = 180f,
                         sweepAngle = 180f,
                         useCenter = false,
-                        topLeft = Offset(0f, 0f),
-                        size = arcRect,
+                        topLeft = arcOffset,
+                        size = arcSize,
                         style = style
                     )
-                    
+
                     // Foreground track
                     if (isOn) {
                         val sweep = (brightness / 100f) * 180f
@@ -130,8 +137,8 @@ fun LightControlScreen(
                             startAngle = 180f,
                             sweepAngle = sweep,
                             useCenter = false,
-                            topLeft = Offset(0f, 0f),
-                            size = arcRect,
+                            topLeft = arcOffset,
+                            size = arcSize,
                             style = style
                         )
                     }
@@ -140,12 +147,12 @@ fun LightControlScreen(
                 // Central text
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(top = 16.dp).semantics {
-                        contentDescription = if (isOn) "$brightness %" else offDesc
+                    modifier = Modifier.padding(top = 16.dp).semantics(mergeDescendants = true) {
+                        contentDescription = if (isOn) brightnessDesc else offDesc
                     }
                 ) {
                     Text(
-                        text = if (isOn) "$brightness %" else stringResource(R.string.light_control_off_state),
+                        text = if (isOn) brightnessDesc else stringResource(R.string.light_control_off_state),
                         fontSize = 48.sp,
                         fontWeight = FontWeight.Black,
                         color = if (isOn) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant
@@ -183,11 +190,12 @@ fun LightControlScreen(
                         ),
                         shape = RoundedCornerShape(8.dp),
                         modifier = Modifier
-                            .size(56.dp, 48.dp)
+                            .widthIn(min = 56.dp)
+                            .heightIn(min = 48.dp)
                             .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
                             .semantics { contentDescription = decreaseDesc }
                     ) {
-                        Text(text = "−", fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                        Text(text = stringResource(R.string.btn_decrease), fontSize = 24.sp, fontWeight = FontWeight.Bold)
                     }
                     
                     Spacer(modifier = Modifier.width(8.dp))
@@ -203,11 +211,12 @@ fun LightControlScreen(
                         ),
                         shape = RoundedCornerShape(8.dp),
                         modifier = Modifier
-                            .size(56.dp, 48.dp)
+                            .widthIn(min = 56.dp)
+                            .heightIn(min = 48.dp)
                             .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
                             .semantics { contentDescription = increaseDesc }
                     ) {
-                        Text(text = "+", fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                        Text(text = stringResource(R.string.btn_increase), fontSize = 24.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
