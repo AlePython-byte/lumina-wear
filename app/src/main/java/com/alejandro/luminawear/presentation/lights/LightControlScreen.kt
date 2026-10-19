@@ -2,6 +2,8 @@ package com.alejandro.luminawear.presentation.lights
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +18,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -25,22 +29,26 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumnState
 import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.ButtonDefaults
 import androidx.wear.compose.material3.ListHeader
-import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.TransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
 import com.alejandro.luminawear.R
 import com.alejandro.luminawear.presentation.models.Light
+import com.alejandro.luminawear.presentation.theme.ActionButtonTokens
+import com.alejandro.luminawear.presentation.theme.BrightnessDialTokens
+import com.alejandro.luminawear.presentation.theme.LightToggleTokens
+import com.alejandro.luminawear.presentation.theme.LuminaBorder
+import com.alejandro.luminawear.presentation.theme.LuminaSpacing
+import com.alejandro.luminawear.presentation.theme.LuminaTheme
+import com.alejandro.luminawear.presentation.theme.LuminaTypography
+import com.alejandro.luminawear.presentation.theme.StepButtonTokens
 
 @Composable
 fun LightControlScreen(
@@ -58,7 +66,7 @@ fun LightControlScreen(
     val lightName = stringResource(light.nameRes)
     val roomName = stringResource(roomNameRes)
     val title = stringResource(R.string.light_control_title, lightName, roomName).uppercase()
-    
+
     val decreaseDesc = stringResource(R.string.light_control_decrease)
     val increaseDesc = stringResource(R.string.light_control_increase)
     val offDesc = stringResource(R.string.light_control_off_accessible)
@@ -80,29 +88,28 @@ fun LightControlScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                     Text(
                         text = stringResource(R.string.header_demo),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
+                        style = LuminaTypography.label,
+                        color = LuminaTheme.colors.accentContent,
                         textAlign = TextAlign.Center
                     )
                     Text(
                         text = title,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
+                        style = LuminaTypography.button,
+                        color = LuminaTheme.colors.text,
                         textAlign = TextAlign.Center
                     )
                 }
             }
         }
-        
+
         item {
-            val arcColorPrimary = MaterialTheme.colorScheme.primary
-            val arcColorTrack = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
-            
+            val arcColor = BrightnessDialTokens.arc
+            val trackColor = BrightnessDialTokens.track
+
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp)
+                    .padding(vertical = LuminaSpacing.sm)
                     .transformedHeight(this, transformationSpec),
                 contentAlignment = Alignment.Center
             ) {
@@ -110,10 +117,10 @@ fun LightControlScreen(
                 Canvas(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .widthIn(max = 180.dp)
+                        .widthIn(max = BrightnessDialTokens.maxWidth)
                         .aspectRatio(2f)
                 ) {
-                    val strokeWidth = 12.dp.toPx()
+                    val strokeWidth = BrightnessDialTokens.strokeWidth.toPx()
                     val style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
                     val inset = strokeWidth / 2f
                     val arcSize = Size(size.width - strokeWidth, size.width - strokeWidth)
@@ -121,7 +128,7 @@ fun LightControlScreen(
 
                     // Background track
                     drawArc(
-                        color = arcColorTrack,
+                        color = trackColor,
                         startAngle = 180f,
                         sweepAngle = 180f,
                         useCenter = false,
@@ -134,7 +141,7 @@ fun LightControlScreen(
                     if (isOn) {
                         val sweep = (brightness / 100f) * 180f
                         drawArc(
-                            color = arcColorPrimary,
+                            color = arcColor,
                             startAngle = 180f,
                             sweepAngle = sweep,
                             useCenter = false,
@@ -144,135 +151,144 @@ fun LightControlScreen(
                         )
                     }
                 }
-                
+
                 // Central text
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(top = 16.dp).semantics(mergeDescendants = true) {
+                    modifier = Modifier.padding(top = BrightnessDialTokens.valueTopPadding).semantics(mergeDescendants = true) {
                         contentDescription = if (isOn) brightnessDesc else offDesc
                     }
                 ) {
                     Text(
                         text = if (isOn) brightnessText else stringResource(R.string.light_control_off_state),
-                        fontSize = 48.sp,
-                        fontWeight = FontWeight.Black,
-                        color = if (isOn) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant
+                        style = LuminaTypography.display,
+                        color = if (isOn) BrightnessDialTokens.value else BrightnessDialTokens.valueOff
                     )
                     Text(
                         text = if (isOn) stringResource(R.string.light_control_brightness) else stringResource(R.string.light_state_off),
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = LuminaTypography.time,
+                        color = BrightnessDialTokens.label
                     )
                 }
             }
         }
-        
+
         if (isOn) {
             item {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp)
+                        .padding(vertical = LuminaSpacing.xs)
                         .transformedHeight(this, transformationSpec),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     val decreaseEnabled = brightness > 1
                     val increaseEnabled = brightness < 100
-                    
-                    Button(
-                        onClick = { if (decreaseEnabled) onBrightnessChange(brightness - 10) },
+
+                    StepButton(
+                        symbol = stringResource(R.string.btn_decrease),
+                        description = decreaseDesc,
                         enabled = decreaseEnabled,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                            contentColor = MaterialTheme.colorScheme.onSurface,
-                            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                            disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                        ),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier
-                            .widthIn(min = 56.dp)
-                            .heightIn(min = 48.dp)
-                            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
-                            .semantics { contentDescription = decreaseDesc }
-                    ) {
-                        Text(text = stringResource(R.string.btn_decrease), fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                    }
-                    
-                    Spacer(modifier = Modifier.width(8.dp))
-                    
-                    Button(
-                        onClick = { if (increaseEnabled) onBrightnessChange(brightness + 10) },
+                        onClick = { if (decreaseEnabled) onBrightnessChange(brightness - 10) }
+                    )
+
+                    Spacer(modifier = Modifier.width(LuminaSpacing.sm))
+
+                    StepButton(
+                        symbol = stringResource(R.string.btn_increase),
+                        description = increaseDesc,
                         enabled = increaseEnabled,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                            contentColor = MaterialTheme.colorScheme.onSurface,
-                            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                            disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                        ),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier
-                            .widthIn(min = 56.dp)
-                            .heightIn(min = 48.dp)
-                            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
-                            .semantics { contentDescription = increaseDesc }
-                    ) {
-                        Text(text = stringResource(R.string.btn_increase), fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                    }
+                        onClick = { if (increaseEnabled) onBrightnessChange(brightness + 10) }
+                    )
                 }
             }
         }
-        
+
         item {
+            val interactionSource = remember { MutableInteractionSource() }
+            val isPressed by interactionSource.collectIsPressedAsState()
+            val containerColor = when {
+                isOn -> LightToggleTokens.containerWhenOn
+                isPressed -> LightToggleTokens.containerPressed
+                else -> LightToggleTokens.containerWhenOff
+            }
+            val borderColor = if (isOn) LightToggleTokens.borderWhenOn else LightToggleTokens.borderWhenOff
             Button(
                 onClick = onTogglePower,
+                interactionSource = interactionSource,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isOn) MaterialTheme.colorScheme.surfaceContainer else MaterialTheme.colorScheme.primary,
-                    contentColor = if (isOn) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onPrimary
+                    containerColor = containerColor,
+                    contentColor = if (isOn) LightToggleTokens.contentWhenOn else LightToggleTokens.contentWhenOff
                 ),
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(LightToggleTokens.radius),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 4.dp)
-                    .heightIn(min = 48.dp)
+                    .padding(vertical = LuminaSpacing.xs)
+                    .heightIn(min = LightToggleTokens.minHeight)
                     .border(
-                        width = 1.dp, 
-                        color = if (isOn) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.primary, 
-                        shape = RoundedCornerShape(8.dp)
+                        width = LuminaBorder.width,
+                        color = borderColor,
+                        shape = RoundedCornerShape(LightToggleTokens.radius)
                     )
                     .transformedHeight(this, transformationSpec),
                 transformation = SurfaceTransformation(transformationSpec)
             ) {
                 Text(
                     text = if (isOn) stringResource(R.string.btn_turn_off) else stringResource(R.string.btn_turn_on),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
+                    style = LuminaTypography.button
                 )
             }
         }
-        
+
         item {
             Button(
                 onClick = onBackClick,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    contentColor = MaterialTheme.colorScheme.onSurface
+                    containerColor = ActionButtonTokens.containerSecondary,
+                    contentColor = ActionButtonTokens.contentSecondary
                 ),
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(ActionButtonTokens.radius),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp)
-                    .heightIn(min = 48.dp)
-                    .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
+                    .padding(vertical = LuminaSpacing.sm)
+                    .heightIn(min = ActionButtonTokens.minHeight)
+                    .border(LuminaBorder.width, ActionButtonTokens.borderSecondary, RoundedCornerShape(ActionButtonTokens.radius))
                     .transformedHeight(this, transformationSpec),
                 transformation = SurfaceTransformation(transformationSpec)
             ) {
                 Text(
                     text = stringResource(R.string.btn_back_to_room, roomName),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
+                    style = LuminaTypography.button
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun StepButton(
+    symbol: String,
+    description: String,
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = StepButtonTokens.container,
+            contentColor = StepButtonTokens.content,
+            disabledContainerColor = StepButtonTokens.containerDisabled,
+            disabledContentColor = StepButtonTokens.contentDisabled
+        ),
+        shape = RoundedCornerShape(StepButtonTokens.radius),
+        modifier = Modifier
+            .widthIn(min = StepButtonTokens.minWidth)
+            .heightIn(min = StepButtonTokens.minHeight)
+            .border(LuminaBorder.width, StepButtonTokens.border, RoundedCornerShape(StepButtonTokens.radius))
+            .semantics { contentDescription = description }
+    ) {
+        Text(text = symbol, style = LuminaTypography.title)
     }
 }

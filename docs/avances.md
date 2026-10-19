@@ -178,3 +178,76 @@
 - Símbolos `−`, `+`, `—` y `DEMO` / `LuminaWear`: iguales en ambos idiomas, se mantienen como recursos.
 - Los porcentajes de listas, tarjetas y etiquetas ("Sala · 30 %") conservan el espacio, como en Figma.
 - Sobre el "80 %" con espacio visto en el emulador: el código ya usaba el string sin espacio, así que el APK instalado probablemente era anterior. Falta confirmarlo en el emulador con esta compilación.
+
+---
+
+## TAREA LW-007 — Design System en código: tokens, tema claro/oscuro y tipografía
+
+**Fecha:** 2026-10-18
+
+**Implementado:**
+- Nivel 1: `LuminaPalette` en `theme/Color.kt`, único archivo con `Color(0x...)` (17 colores de Figma "Lumina / Primitives").
+- Nivel 2: `LuminaColors` + `LocalLuminaColors` + `LuminaTheme.colors` en `theme/Tokens.kt`, con `LightLuminaColors` y `DarkLuminaColors`. Mapeo al `ColorScheme` de Wear Material 3 en `Theme.kt` (primary=accent, onPrimary=onAccent, background=bg, surfaceContainer=surface, onSurface=text, onSurfaceVariant=muted, outline=border, error=danger).
+- Escala: `LuminaSpacing`, `LuminaRadius`, `LuminaSizes.touch`, `LuminaBorder.width`.
+- Nivel 3: `theme/ComponentTokens.kt` con ActionButton, StatusChip, RoomControl, SceneCard, LightToggle, NavigationItem, BrightnessDial y StepButton, solo con tokens semánticos.
+- Tipografía: `LuminaTypography` en `theme/Type.kt` (display, title, body, button, label, time); familia en `LuminaFontFamily` (SansSerif hasta LW-007b). También alimenta la `Typography` de Material.
+- Tema: `LuminaWearTheme(themeMode = ThemeMode.LIGHT)`, enum `ThemeMode { LIGHT, DARK }`. Estado `themeMode` en `WearApp` (rememberSaveable, arranca en LIGHT). Selector y persistencia: LW-008.
+- Pantallas: Inicio, Habitaciones, detalle de habitación y control de luz usan solo tokens. Textos de acento ("DEMO", contador de Inicio, "POR LA HORA", estado "Encendida", arco) pasan de `primary` (lime) a `accentContent`. `StepButton` extraído como composable privado.
+- Previews claro y oscuro de las 4 pantallas en `WearApp.kt`. Las previews anteriores quedan en tema claro (predeterminado).
+- `docs/design-tokens.md` con tablas de los 3 niveles y mapa Atomic Design.
+
+**Contraste (WCAG, calculado por script):**
+
+| Par | Claro | Oscuro |
+|---|---|---|
+| text/bg | 16.74 | 19.05 |
+| muted/bg | 6.52 | 7.05 |
+| muted/surface | 5.94 | 6.39 |
+| accentContent/bg | 6.66 | 17.82 |
+| onAccent/accent | 17.82 | 17.82 |
+| warning/bg | 6.68 | 12.22 |
+| danger/bg | 6.57 | 6.84 |
+| border/bg (informativo) | 3.76 | 1.74 |
+
+**Decisiones propias:**
+- Estados sin valor en Figma: disabled de ActionButton, NavigationItem y StepButton = surface + muted; pressed se aplica con `interactionSource` en "Apagar todo" y "Encender".
+- Texto regular de 12 sp (subtítulos, estados, etiqueta del dial) usa el estilo `time`, el único Regular 12/16 de Figma. Los títulos de 14 sp en negrita usan `button`. Los símbolos −/+ pasan de 24 sp a `title` (20 sp). "Descanso" pasa de 20 sp Regular a `title` (Bold).
+- Fuera de escala (como tokens de componente): alto mínimo de fila 60 dp (RoomControl), ancho mínimo de −/+ 56 dp (StepButton), ancho máximo del dial 180 dp (BrightnessDial).
+- La pista del arco pasa de onSurfaceVariant al 30% a `border`.
+
+**Estados:**
+- Implementado: sí.
+- Compilado: sí, `BUILD SUCCESSFUL in 40s` con `.\gradlew.bat :app:assembleDebug --no-daemon --stacktrace`.
+- Preview renderizado: no.
+- Instalado: no.
+- Probado: no (lo prueba Alejandro).
+
+**Pendientes:**
+- Archivo Roboto Flex (LW-007b).
+- Selector de tema y persistencia (LW-008).
+- Revisar en emulador ambos temas, con atención al contraste de border en oscuro (1.74:1, decorativo).
+
+---
+
+## TAREA LW-007b — Conectar la fuente Roboto Flex
+
+**Fecha:** 2026-10-18
+
+**Implementado:**
+- El archivo estaba como `res/font/roboto_flex.ttf.ttf` (nombre inválido como recurso por el punto). Se renombró a `roboto_flex.ttf` sin modificar su contenido (1 684 624 bytes, ≈1,6 MB).
+- `LuminaFontFamily` en `theme/Type.kt` pasó de `FontFamily.SansSerif` a Roboto Flex variable: tres `Font(R.font.roboto_flex, weight, variationSettings = FontVariation.Settings(FontVariation.weight(...)))` para Regular 400, Bold 700 y Black 900. Se usa `@OptIn(ExperimentalTextApi::class)`.
+- Sin cambios de versiones: `FontVariation` está disponible con el BOM 2024.09.00 y `minSdk = 30` (las variaciones de fuente se aplican desde la API 26).
+- Verificación por grep: `FontFamily`, `TextStyle(`, `fontSize`, `fontWeight`, `fontFamily` y `.sp` solo aparecen en `Type.kt`. Los 27 `Text(` de las 4 pantallas usan `style = LuminaTypography.*`.
+- `docs/design-tokens.md`: nueva sección "Tipografía y licencia" (Roboto Flex, SIL OFL 1.1, archivo y ubicación del FontFamily). La licencia ya estaba en `docs/licenses/OFL.txt`.
+
+**Estados:**
+- Implementado: sí.
+- Compilado: sí, `BUILD SUCCESSFUL in 40s` con `.\gradlew.bat :app:assembleDebug --no-daemon --stacktrace`.
+- Preview renderizado: no.
+- Instalado: no.
+- Probado: no (lo prueba Alejandro).
+
+**Límites / observaciones:**
+- Solo se usan los ejes de peso (400, 700, 900). No se aplican otros ejes de Roboto Flex (ancho, óptico, etc.).
+- Que el peso 900 se vea distinto del 700 en el emulador no está verificado.
+- `FontVariation` se marca como API experimental de texto (`ExperimentalTextApi`); por eso el `@OptIn`.

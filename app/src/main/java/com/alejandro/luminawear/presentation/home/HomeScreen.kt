@@ -1,6 +1,8 @@
 package com.alejandro.luminawear.presentation.home
 
 import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -9,14 +11,13 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumnItemScope
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumnState
@@ -25,12 +26,18 @@ import androidx.wear.compose.material3.ButtonDefaults
 import androidx.wear.compose.material3.Card
 import androidx.wear.compose.material3.CardDefaults
 import androidx.wear.compose.material3.ListHeader
-import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.TransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
 import com.alejandro.luminawear.R
+import com.alejandro.luminawear.presentation.theme.ActionButtonTokens
+import com.alejandro.luminawear.presentation.theme.LuminaBorder
+import com.alejandro.luminawear.presentation.theme.LuminaSpacing
+import com.alejandro.luminawear.presentation.theme.LuminaTheme
+import com.alejandro.luminawear.presentation.theme.LuminaTypography
+import com.alejandro.luminawear.presentation.theme.NavigationItemTokens
+import com.alejandro.luminawear.presentation.theme.SceneCardTokens
 
 @Composable
 fun HomeScreen(
@@ -57,15 +64,14 @@ fun HomeScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                     Text(
                         text = stringResource(R.string.header_demo),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
+                        style = LuminaTypography.label,
+                        color = LuminaTheme.colors.accentContent,
                         textAlign = TextAlign.Center
                     )
                     Text(
                         text = stringResource(R.string.header_my_home),
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
+                        style = LuminaTypography.button,
+                        color = LuminaTheme.colors.text,
                         textAlign = TextAlign.Center
                     )
                 }
@@ -76,56 +82,57 @@ fun HomeScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .transformedHeight(this, transformationSpec)
-                    .padding(vertical = 8.dp),
+                    .padding(vertical = LuminaSpacing.sm),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
                     text = stringResource(R.string.lights_counter, lightsOn, totalLights),
-                    fontSize = 48.sp,
-                    fontWeight = FontWeight.Black,
-                    color = MaterialTheme.colorScheme.primary
+                    style = LuminaTypography.display,
+                    color = LuminaTheme.colors.accentContent
                 )
                 Text(
                     text = pluralStringResource(R.plurals.lights_on_subtitle, lightsOn),
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    style = LuminaTypography.body,
+                    color = LuminaTheme.colors.muted
                 )
             }
         }
         item {
             val allOff = lightsOn == 0
+            val interactionSource = remember { MutableInteractionSource() }
+            val isPressed by interactionSource.collectIsPressedAsState()
             Button(
                 onClick = onTurnOffAllClick,
                 enabled = !allOff,
+                interactionSource = interactionSource,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    containerColor = if (isPressed) ActionButtonTokens.containerPressed else ActionButtonTokens.containerDefault,
+                    contentColor = ActionButtonTokens.contentDefault,
+                    disabledContainerColor = ActionButtonTokens.containerDisabled,
+                    disabledContentColor = ActionButtonTokens.contentDisabled
                 ),
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(ActionButtonTokens.radius),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 4.dp)
-                    .heightIn(min = 48.dp)
+                    .padding(vertical = LuminaSpacing.xs)
+                    .heightIn(min = ActionButtonTokens.minHeight)
                     .transformedHeight(this, transformationSpec),
                 transformation = SurfaceTransformation(transformationSpec)
             ) {
                 Text(
                     text = if (allOff) stringResource(R.string.btn_all_off) else stringResource(R.string.btn_turn_off_all),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
+                    style = LuminaTypography.button
                 )
             }
         }
         item {
             Text(
                 text = stringResource(R.string.help_swipe_more),
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = LuminaTypography.time,
+                color = LuminaTheme.colors.muted,
                 modifier = Modifier
-                    .padding(top = 16.dp, bottom = 8.dp)
+                    .padding(top = LuminaSpacing.lg, bottom = LuminaSpacing.sm)
                     .transformedHeight(this, transformationSpec)
             )
         }
@@ -134,31 +141,30 @@ fun HomeScreen(
                 onClick = { /* TODO */ },
                 enabled = false,
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    containerColor = SceneCardTokens.container
                 ),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(SceneCardTokens.radius),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 4.dp)
+                    .padding(vertical = LuminaSpacing.xs)
                     .transformedHeight(this, transformationSpec),
                 transformation = SurfaceTransformation(transformationSpec)
             ) {
-                Column(modifier = Modifier.padding(12.dp)) {
+                Column(modifier = Modifier.padding(SceneCardTokens.padding)) {
                     Text(
                         text = stringResource(R.string.card_by_time),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                        style = LuminaTypography.label,
+                        color = SceneCardTokens.eyebrow
                     )
                     Text(
                         text = stringResource(R.string.card_rest),
-                        fontSize = 20.sp,
-                        color = MaterialTheme.colorScheme.onSurface
+                        style = LuminaTypography.title,
+                        color = SceneCardTokens.title
                     )
                     Text(
                         text = stringResource(R.string.card_room_percent, stringResource(R.string.room_living), 30),
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = LuminaTypography.body,
+                        color = SceneCardTokens.subtitle
                     )
                 }
             }
@@ -182,20 +188,20 @@ fun SecondaryAccessButton(
         onClick = onClick,
         enabled = isEnabled,
         colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-            contentColor = MaterialTheme.colorScheme.onSurface,
-            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-            disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+            containerColor = NavigationItemTokens.container,
+            contentColor = NavigationItemTokens.content,
+            disabledContainerColor = NavigationItemTokens.containerDisabled,
+            disabledContentColor = NavigationItemTokens.contentDisabled
         ),
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(NavigationItemTokens.radius),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
-            .heightIn(min = 48.dp)
-            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
+            .padding(vertical = LuminaSpacing.xs)
+            .heightIn(min = NavigationItemTokens.minHeight)
+            .border(LuminaBorder.width, NavigationItemTokens.border, RoundedCornerShape(NavigationItemTokens.radius))
             .transformedHeight(scope, transformationSpec),
         transformation = with(scope) { SurfaceTransformation(transformationSpec) }
     ) {
-        Text(text = text)
+        Text(text = text, style = LuminaTypography.body)
     }
 }

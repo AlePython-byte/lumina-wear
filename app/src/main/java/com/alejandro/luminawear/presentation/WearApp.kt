@@ -25,6 +25,7 @@ import com.alejandro.luminawear.presentation.state.rememberLightStateHolder
 import com.alejandro.luminawear.presentation.state.LightState
 import com.alejandro.luminawear.presentation.state.LightStateHolder
 import com.alejandro.luminawear.presentation.theme.LuminaWearTheme
+import com.alejandro.luminawear.presentation.theme.ThemeMode
 
 enum class ScreenType { HOME, ROOMS, ROOM_DETAIL, LIGHT_CONTROL }
 
@@ -38,6 +39,8 @@ fun WearApp() {
     var currentScreen by rememberSaveable { mutableStateOf(ScreenType.HOME.name) }
     var selectedRoomId by rememberSaveable { mutableStateOf("") }
     var selectedLightId by rememberSaveable { mutableStateOf("") }
+    // Único dueño del tema; LW-008 lo conecta al selector y a la persistencia.
+    var themeMode by rememberSaveable { mutableStateOf(ThemeMode.LIGHT) }
 
     BackHandler(currentScreen != ScreenType.HOME.name) {
         when (currentScreen) {
@@ -51,7 +54,7 @@ fun WearApp() {
         }
     }
 
-    LuminaWearTheme {
+    LuminaWearTheme(themeMode = themeMode) {
         AppScaffold {
             val stateHolder = rememberSaveableStateHolder()
             val currentKey = when (currentScreen) {
@@ -397,6 +400,202 @@ fun PreviewLightControlMax() {
                     roomNameRes = R.string.room_living,
                     isOn = true,
                     brightness = 100,
+                    onBrightnessChange = {},
+                    onTogglePower = {},
+                    onBackClick = {},
+                    contentPadding = contentPadding,
+                    listState = listState,
+                    transformationSpec = transformationSpec
+                )
+            }
+        }
+    }
+}
+
+// Previews por tema: claro (predeterminado) y oscuro
+
+@WearPreviewDevices
+@Composable
+fun PreviewHomeLight() {
+    LuminaWearTheme(themeMode = ThemeMode.LIGHT) {
+        AppScaffold {
+            val listState = rememberTransformingLazyColumnState()
+            val transformationSpec = rememberTransformationSpec()
+            ScreenScaffold(scrollState = listState) { contentPadding ->
+                HomeScreen(
+                    lightsOn = 5,
+                    totalLights = 8,
+                    onTurnOffAllClick = {},
+                    onRoomsClick = {},
+                    contentPadding = contentPadding,
+                    listState = listState,
+                    transformationSpec = transformationSpec
+                )
+            }
+        }
+    }
+}
+
+@WearPreviewDevices
+@Composable
+fun PreviewHomeDark() {
+    LuminaWearTheme(themeMode = ThemeMode.DARK) {
+        AppScaffold {
+            val listState = rememberTransformingLazyColumnState()
+            val transformationSpec = rememberTransformationSpec()
+            ScreenScaffold(scrollState = listState) { contentPadding ->
+                HomeScreen(
+                    lightsOn = 5,
+                    totalLights = 8,
+                    onTurnOffAllClick = {},
+                    onRoomsClick = {},
+                    contentPadding = contentPadding,
+                    listState = listState,
+                    transformationSpec = transformationSpec
+                )
+            }
+        }
+    }
+}
+
+@WearPreviewDevices
+@Composable
+fun PreviewRoomsLight() {
+    LuminaWearTheme(themeMode = ThemeMode.LIGHT) {
+        AppScaffold {
+            val listState = rememberTransformingLazyColumnState()
+            val transformationSpec = rememberTransformationSpec()
+            ScreenScaffold(scrollState = listState) { contentPadding ->
+                RoomsScreen(
+                    rooms = appRooms,
+                    getLightsCount = { roomId ->
+                        val roomLights = appLights.filter { it.roomId == roomId }
+                        val onCount = roomLights.count { previewInitialLightsOn.contains(it.id) }
+                        Pair(onCount, roomLights.size)
+                    },
+                    onRoomClick = {},
+                    onBackClick = {},
+                    contentPadding = contentPadding,
+                    listState = listState,
+                    transformationSpec = transformationSpec
+                )
+            }
+        }
+    }
+}
+
+@WearPreviewDevices
+@Composable
+fun PreviewRoomsDark() {
+    LuminaWearTheme(themeMode = ThemeMode.DARK) {
+        AppScaffold {
+            val listState = rememberTransformingLazyColumnState()
+            val transformationSpec = rememberTransformationSpec()
+            ScreenScaffold(scrollState = listState) { contentPadding ->
+                RoomsScreen(
+                    rooms = appRooms,
+                    getLightsCount = { roomId ->
+                        val roomLights = appLights.filter { it.roomId == roomId }
+                        val onCount = roomLights.count { previewInitialLightsOn.contains(it.id) }
+                        Pair(onCount, roomLights.size)
+                    },
+                    onRoomClick = {},
+                    onBackClick = {},
+                    contentPadding = contentPadding,
+                    listState = listState,
+                    transformationSpec = transformationSpec
+                )
+            }
+        }
+    }
+}
+
+@WearPreviewDevices
+@Composable
+fun PreviewRoomDetailLight() {
+    LuminaWearTheme(themeMode = ThemeMode.LIGHT) {
+        AppScaffold {
+            val listState = rememberTransformingLazyColumnState()
+            val transformationSpec = rememberTransformationSpec()
+            val holder = rememberLightStateHolder()
+            ScreenScaffold(scrollState = listState) { contentPadding ->
+                RoomDetailScreen(
+                    roomNameRes = R.string.room_living,
+                    lights = appLights.filter { it.roomId == "living_room" },
+                    lightStateHolder = holder,
+                    onLightClick = {},
+                    onBackClick = {},
+                    contentPadding = contentPadding,
+                    listState = listState,
+                    transformationSpec = transformationSpec
+                )
+            }
+        }
+    }
+}
+
+@WearPreviewDevices
+@Composable
+fun PreviewRoomDetailDark() {
+    LuminaWearTheme(themeMode = ThemeMode.DARK) {
+        AppScaffold {
+            val listState = rememberTransformingLazyColumnState()
+            val transformationSpec = rememberTransformationSpec()
+            val holder = rememberLightStateHolder()
+            ScreenScaffold(scrollState = listState) { contentPadding ->
+                RoomDetailScreen(
+                    roomNameRes = R.string.room_living,
+                    lights = appLights.filter { it.roomId == "living_room" },
+                    lightStateHolder = holder,
+                    onLightClick = {},
+                    onBackClick = {},
+                    contentPadding = contentPadding,
+                    listState = listState,
+                    transformationSpec = transformationSpec
+                )
+            }
+        }
+    }
+}
+
+@WearPreviewDevices
+@Composable
+fun PreviewLightControlLight() {
+    LuminaWearTheme(themeMode = ThemeMode.LIGHT) {
+        AppScaffold {
+            val listState = rememberTransformingLazyColumnState()
+            val transformationSpec = rememberTransformationSpec()
+            ScreenScaffold(scrollState = listState) { contentPadding ->
+                LightControlScreen(
+                    light = appLights.first { it.id == "living_plafon" },
+                    roomNameRes = R.string.room_living,
+                    isOn = true,
+                    brightness = 80,
+                    onBrightnessChange = {},
+                    onTogglePower = {},
+                    onBackClick = {},
+                    contentPadding = contentPadding,
+                    listState = listState,
+                    transformationSpec = transformationSpec
+                )
+            }
+        }
+    }
+}
+
+@WearPreviewDevices
+@Composable
+fun PreviewLightControlDark() {
+    LuminaWearTheme(themeMode = ThemeMode.DARK) {
+        AppScaffold {
+            val listState = rememberTransformingLazyColumnState()
+            val transformationSpec = rememberTransformationSpec()
+            ScreenScaffold(scrollState = listState) { contentPadding ->
+                LightControlScreen(
+                    light = appLights.first { it.id == "living_plafon" },
+                    roomNameRes = R.string.room_living,
+                    isOn = true,
+                    brightness = 80,
                     onBrightnessChange = {},
                     onTogglePower = {},
                     onBackClick = {},
