@@ -51,7 +51,7 @@ private fun sceneRoomPercentTight(scene: Scene): String =
     stringResource(R.string.scene_room_percent_tight, sceneRoomName(scene), scene.percent)
 
 @Composable
-private fun SceneHeader(
+internal fun SceneHeader(
     title: String,
     scope: TransformingLazyColumnItemScope,
     transformationSpec: TransformationSpec,
@@ -85,7 +85,7 @@ private fun SceneHeader(
 }
 
 @Composable
-private fun CenteredText(
+internal fun CenteredText(
     text: String,
     scope: TransformingLazyColumnItemScope,
     transformationSpec: TransformationSpec,

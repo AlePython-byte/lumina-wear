@@ -21,8 +21,16 @@ class AppPreferences(context: Context) {
             prefs.edit().putString(KEY_LANGUAGE, value.tag).apply()
         }
 
+    /** Ids separados por comas. Clave ausente: favoritos por defecto; presente y vacía: sin favoritos. */
+    var favorites: String
+        get() = prefs.getString(KEY_FAVORITES, null) ?: DEFAULT_FAVORITES
+        set(value) {
+            prefs.edit().putString(KEY_FAVORITES, value).apply()
+        }
+
     private companion object {
         const val FILE_NAME = "luminawear_prefs"
+        const val KEY_FAVORITES = "favorites"
         const val KEY_THEME_MODE = "theme_mode"
         const val KEY_LANGUAGE = "language"
     }

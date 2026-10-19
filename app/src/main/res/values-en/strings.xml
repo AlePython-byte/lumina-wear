@@ -86,4 +86,17 @@
     <string name="btn_turn_on">Turn on</string>
     <string name="btn_turn_off">Turn off</string>
     <string name="btn_back_to_room">Back to %1$s</string>
+
+    <string name="btn_edit">Edit</string>
+    <string name="btn_back">Back</string>
+    <string name="btn_restore_demo">Restore demo</string>
+    <string name="fav_edit_title">Edit favorites</string>
+    <string name="fav_saved_title">Saved shortcuts</string>
+    <string name="fav_detail_light">%1$s · brightness</string>
+    <string name="fav_detail_scene">%1$s · scene</string>
+    <string name="fav_remove_light">Remove %1$s</string>
+    <string name="fav_remove_scene">Remove scene</string>
+    <string name="fav_empty_title">One tap away.</string>
+    <string name="fav_empty_body">Save a light or scene to find it here.</string>
+    <string name="fav_add_plafon">Add ceiling light</string>
 </resources>

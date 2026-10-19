@@ -1,6 +1,7 @@
 package com.alejandro.luminawear.presentation
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -9,14 +10,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
+import androidx.wear.compose.foundation.lazy.TransformingLazyColumnState
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
 import androidx.wear.compose.material3.AppScaffold
 import androidx.wear.compose.material3.ScreenScaffold
+import androidx.wear.compose.material3.lazy.TransformationSpec
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import androidx.wear.compose.ui.tooling.preview.WearPreviewDevices
 import androidx.wear.compose.ui.tooling.preview.WearPreviewFontScales
 import com.alejandro.luminawear.R
 import java.time.LocalTime
+import com.alejandro.luminawear.presentation.favorites.FavoritesEditScreen
+import com.alejandro.luminawear.presentation.favorites.FavoritesScreen
 import com.alejandro.luminawear.presentation.home.HomeScreen
 import com.alejandro.luminawear.presentation.lights.LightControlScreen
 import com.alejandro.luminawear.presentation.models.appLights
@@ -34,6 +39,13 @@ import com.alejandro.luminawear.presentation.settings.SettingsScreen
 import com.alejandro.luminawear.presentation.state.parseLightStates
 import com.alejandro.luminawear.presentation.state.serializeLightStates
 import com.alejandro.luminawear.presentation.state.AppLanguage
+import com.alejandro.luminawear.presentation.state.DEFAULT_FAVORITES
+import com.alejandro.luminawear.presentation.state.FAVORITE_PLAFON_ID
+import com.alejandro.luminawear.presentation.state.Favorite
+import com.alejandro.luminawear.presentation.state.defaultLightStates
+import com.alejandro.luminawear.presentation.state.parseFavoriteIds
+import com.alejandro.luminawear.presentation.state.resolveFavorites
+import com.alejandro.luminawear.presentation.state.serializeFavoriteIds
 import com.alejandro.luminawear.presentation.state.rememberLightStateHolder
 import com.alejandro.luminawear.presentation.state.LightState
 import com.alejandro.luminawear.presentation.state.LightStateHolder
@@ -41,14 +53,16 @@ import com.alejandro.luminawear.presentation.theme.LuminaTimeText
 import com.alejandro.luminawear.presentation.theme.LuminaWearTheme
 import com.alejandro.luminawear.presentation.theme.ThemeMode
 
-enum class ScreenType { HOME, ROOMS, ROOM_DETAIL, LIGHT_CONTROL, SETTINGS, SCENES, SCENE_DETAIL, SCENE_ACTIVE, SUGGESTION }
+enum class ScreenType { HOME, ROOMS, ROOM_DETAIL, LIGHT_CONTROL, SETTINGS, SCENES, SCENE_DETAIL, SCENE_ACTIVE, SUGGESTION, FAVORITES, FAVORITES_EDIT }
 
 @Composable
 fun WearApp(
     initialThemeMode: ThemeMode = ThemeMode.LIGHT,
     language: AppLanguage = AppLanguage.ES,
     onThemeModeChange: (ThemeMode) -> Unit = {},
-    onLanguageChange: (AppLanguage) -> Unit = {}
+    onLanguageChange: (AppLanguage) -> Unit = {},
+    initialFavorites: String = DEFAULT_FAVORITES,
+    onFavoritesChange: (String) -> Unit = {}
 ) {
     val lightStateHolder = rememberLightStateHolder()
 
@@ -65,6 +79,32 @@ fun WearApp(
     var undoSnapshot by rememberSaveable { mutableStateOf("") }
     var suggestionDismissed by rememberSaveable { mutableStateOf(false) }
     val suggestion = remember { suggestionForHour(LocalTime.now().hour) }
+    // Ids de favoritos separados por comas; MainActivity entrega el valor guardado y persiste los cambios.
+    var favoritesRaw by rememberSaveable { mutableStateOf(serializeFavoriteIds(parseFavoriteIds(initialFavorites))) }
+    // true cuando el control de luz o el detalle de escena se abrieron desde Favoritos (atrás vuelve allí).
+    var openedFromFavorites by rememberSaveable { mutableStateOf(false) }
+    val favorites = resolveFavorites(favoritesRaw)
+
+    fun updateFavorites(ids: List<String>) {
+        favoritesRaw = serializeFavoriteIds(ids)
+        onFavoritesChange(favoritesRaw)
+    }
+
+    fun removeFavorite(favorite: Favorite) {
+        val remaining = parseFavoriteIds(favoritesRaw) - favorite.id
+        updateFavorites(remaining)
+        if (remaining.isEmpty()) currentScreen = ScreenType.FAVORITES.name
+    }
+
+    fun restoreDemo() {
+        updateFavorites(parseFavoriteIds(DEFAULT_FAVORITES))
+        lightStateHolder.restore(defaultLightStates())
+        undoSnapshot = ""
+        selectedSceneId = ""
+        suggestionDismissed = false
+        openedFromFavorites = false
+        currentScreen = ScreenType.FAVORITES.name
+    }
 
     fun activateScene(scene: Scene) {
         undoSnapshot = serializeLightStates(lightStateHolder.toMap())
@@ -76,18 +116,33 @@ fun WearApp(
     BackHandler(currentScreen != ScreenType.HOME.name) {
         when (currentScreen) {
             ScreenType.LIGHT_CONTROL.name -> {
-                val backLight = appLights.firstOrNull { it.id == selectedLightId }
-                if (backLight != null) selectedRoomId = backLight.roomId
-                currentScreen = ScreenType.ROOM_DETAIL.name
+                if (openedFromFavorites) {
+                    openedFromFavorites = false
+                    currentScreen = ScreenType.FAVORITES.name
+                } else {
+                    val backLight = appLights.firstOrNull { it.id == selectedLightId }
+                    if (backLight != null) selectedRoomId = backLight.roomId
+                    currentScreen = ScreenType.ROOM_DETAIL.name
+                }
             }
+            ScreenType.FAVORITES.name -> currentScreen = ScreenType.HOME.name
+            ScreenType.FAVORITES_EDIT.name -> currentScreen = ScreenType.FAVORITES.name
             ScreenType.ROOM_DETAIL.name -> currentScreen = ScreenType.ROOMS.name
             ScreenType.ROOMS.name -> currentScreen = ScreenType.HOME.name
             ScreenType.SETTINGS.name -> currentScreen = ScreenType.HOME.name
             ScreenType.SUGGESTION.name -> currentScreen = ScreenType.HOME.name
             ScreenType.SCENES.name -> currentScreen = ScreenType.HOME.name
-            ScreenType.SCENE_DETAIL.name -> currentScreen = ScreenType.SCENES.name
+            ScreenType.SCENE_DETAIL.name -> {
+                if (openedFromFavorites) {
+                    openedFromFavorites = false
+                    currentScreen = ScreenType.FAVORITES.name
+                } else {
+                    currentScreen = ScreenType.SCENES.name
+                }
+            }
             ScreenType.SCENE_ACTIVE.name -> {
                 undoSnapshot = ""
+                openedFromFavorites = false
                 currentScreen = ScreenType.SCENES.name
             }
         }
@@ -116,6 +171,7 @@ fun WearApp(
                                 onTurnOffAllClick = { lightStateHolder.turnOffAll() },
                                 onRoomsClick = { currentScreen = ScreenType.ROOMS.name },
                                 onScenesClick = { currentScreen = ScreenType.SCENES.name },
+                                onFavoritesClick = { currentScreen = ScreenType.FAVORITES.name },
                                 onSettingsClick = { currentScreen = ScreenType.SETTINGS.name },
                                 suggestion = if (suggestionDismissed) null else suggestion,
                                 onSuggestionClick = { currentScreen = ScreenType.SUGGESTION.name },
@@ -124,9 +180,48 @@ fun WearApp(
                                 transformationSpec = transformationSpec
                             )
                         }
+                        ScreenType.FAVORITES.name -> {
+                            FavoritesScreen(
+                                favorites = favorites,
+                                onFavoriteClick = { favorite ->
+                                    openedFromFavorites = true
+                                    when (favorite) {
+                                        is Favorite.LightFavorite -> {
+                                            selectedLightId = favorite.light.id
+                                            currentScreen = ScreenType.LIGHT_CONTROL.name
+                                        }
+                                        is Favorite.SceneFavorite -> {
+                                            selectedSceneId = favorite.scene.id
+                                            currentScreen = ScreenType.SCENE_DETAIL.name
+                                        }
+                                    }
+                                },
+                                onEditClick = { currentScreen = ScreenType.FAVORITES_EDIT.name },
+                                onRemoveClick = ::removeFavorite,
+                                onRestoreDemoClick = ::restoreDemo,
+                                onAddPlafonClick = {
+                                    updateFavorites(parseFavoriteIds(favoritesRaw) + FAVORITE_PLAFON_ID)
+                                },
+                                onHomeClick = { currentScreen = ScreenType.HOME.name },
+                                contentPadding = contentPadding,
+                                listState = listState,
+                                transformationSpec = transformationSpec
+                            )
+                        }
+                        ScreenType.FAVORITES_EDIT.name -> {
+                            FavoritesEditScreen(
+                                favorites = favorites,
+                                onRemoveClick = ::removeFavorite,
+                                onBackClick = { currentScreen = ScreenType.FAVORITES.name },
+                                contentPadding = contentPadding,
+                                listState = listState,
+                                transformationSpec = transformationSpec
+                            )
+                        }
                         ScreenType.SCENES.name -> {
                             ScenesScreen(
                                 onSceneClick = { sceneId ->
+                                    openedFromFavorites = false
                                     selectedSceneId = sceneId
                                     currentScreen = ScreenType.SCENE_DETAIL.name
                                 },
@@ -144,7 +239,14 @@ fun WearApp(
                                 SceneDetailScreen(
                                     scene = scene,
                                     onActivateClick = { activateScene(scene) },
-                                    onScenesClick = { currentScreen = ScreenType.SCENES.name },
+                                    onScenesClick = {
+                                        if (openedFromFavorites) {
+                                            openedFromFavorites = false
+                                            currentScreen = ScreenType.FAVORITES.name
+                                        } else {
+                                            currentScreen = ScreenType.SCENES.name
+                                        }
+                                    },
                                     contentPadding = contentPadding,
                                     listState = listState,
                                     transformationSpec = transformationSpec
@@ -165,6 +267,7 @@ fun WearApp(
                                     },
                                     onHomeClick = {
                                         undoSnapshot = ""
+                                        openedFromFavorites = false
                                         currentScreen = ScreenType.HOME.name
                                     },
                                     contentPadding = contentPadding,
@@ -176,8 +279,12 @@ fun WearApp(
                         ScreenType.SUGGESTION.name -> {
                             SuggestionScreen(
                                 scene = suggestion,
-                                onActivateClick = { activateScene(suggestion) },
+                                onActivateClick = {
+                                    openedFromFavorites = false
+                                    activateScene(suggestion)
+                                },
                                 onViewSceneClick = {
+                                    openedFromFavorites = false
                                     selectedSceneId = suggestion.id
                                     currentScreen = ScreenType.SCENE_DETAIL.name
                                 },
@@ -236,6 +343,7 @@ fun WearApp(
                                     lights = roomLights,
                                     lightStateHolder = lightStateHolder,
                                     onLightClick = { lightId ->
+                                        openedFromFavorites = false
                                         selectedLightId = lightId
                                         currentScreen = ScreenType.LIGHT_CONTROL.name
                                     },
@@ -264,8 +372,13 @@ fun WearApp(
                                     onBrightnessChange = { newBr -> lightStateHolder.setBrightness(light.id, newBr) },
                                     onTogglePower = { lightStateHolder.setLightOn(light.id, !state.isOn) },
                                     onBackClick = {
-                                        selectedRoomId = light.roomId
-                                        currentScreen = ScreenType.ROOM_DETAIL.name
+                                        if (openedFromFavorites) {
+                                            openedFromFavorites = false
+                                            currentScreen = ScreenType.FAVORITES.name
+                                        } else {
+                                            selectedRoomId = light.roomId
+                                            currentScreen = ScreenType.ROOM_DETAIL.name
+                                        }
                                     },
                                     contentPadding = contentPadding,
                                     listState = listState,
@@ -777,3 +890,88 @@ fun PreviewSettingsDark() {
         }
     }
 }
+
+// Previews de Favoritos (LW-009b): lista, edición, un favorito y vacío; claro y oscuro.
+
+private val previewFavoritesTwo = resolveFavorites(DEFAULT_FAVORITES)
+private val previewFavoritesOne = resolveFavorites("relax")
+
+@Composable
+private fun FavoritesPreviewHost(
+    themeMode: ThemeMode,
+    content: @Composable (PaddingValues, TransformingLazyColumnState, TransformationSpec) -> Unit
+) {
+    LuminaWearTheme(themeMode = themeMode) {
+        AppScaffold(timeText = { LuminaTimeText() }) {
+            val listState = rememberTransformingLazyColumnState()
+            val transformationSpec = rememberTransformationSpec()
+            ScreenScaffold(scrollState = listState) { contentPadding ->
+                content(contentPadding, listState, transformationSpec)
+            }
+        }
+    }
+}
+
+@Composable
+private fun PreviewFavorites(themeMode: ThemeMode, favorites: List<Favorite>) {
+    FavoritesPreviewHost(themeMode) { padding, state, spec ->
+        FavoritesScreen(
+            favorites = favorites,
+            onFavoriteClick = {},
+            onEditClick = {},
+            onRemoveClick = {},
+            onRestoreDemoClick = {},
+            onAddPlafonClick = {},
+            onHomeClick = {},
+            contentPadding = padding,
+            listState = state,
+            transformationSpec = spec
+        )
+    }
+}
+
+@Composable
+private fun PreviewFavoritesEdit(themeMode: ThemeMode) {
+    FavoritesPreviewHost(themeMode) { padding, state, spec ->
+        FavoritesEditScreen(
+            favorites = previewFavoritesTwo,
+            onRemoveClick = {},
+            onBackClick = {},
+            contentPadding = padding,
+            listState = state,
+            transformationSpec = spec
+        )
+    }
+}
+
+@WearPreviewDevices
+@Composable
+fun PreviewFavoritesLight() = PreviewFavorites(ThemeMode.LIGHT, previewFavoritesTwo)
+
+@WearPreviewDevices
+@Composable
+fun PreviewFavoritesDark() = PreviewFavorites(ThemeMode.DARK, previewFavoritesTwo)
+
+@WearPreviewDevices
+@Composable
+fun PreviewFavoritesEditLight() = PreviewFavoritesEdit(ThemeMode.LIGHT)
+
+@WearPreviewDevices
+@Composable
+fun PreviewFavoritesEditDark() = PreviewFavoritesEdit(ThemeMode.DARK)
+
+@WearPreviewDevices
+@Composable
+fun PreviewFavoritesOneLight() = PreviewFavorites(ThemeMode.LIGHT, previewFavoritesOne)
+
+@WearPreviewDevices
+@Composable
+fun PreviewFavoritesOneDark() = PreviewFavorites(ThemeMode.DARK, previewFavoritesOne)
+
+@WearPreviewDevices
+@Composable
+fun PreviewFavoritesEmptyLight() = PreviewFavorites(ThemeMode.LIGHT, emptyList())
+
+@WearPreviewDevices
+@Composable
+fun PreviewFavoritesEmptyDark() = PreviewFavorites(ThemeMode.DARK, emptyList())

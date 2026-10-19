@@ -311,3 +311,39 @@
 - Probado: no (lo prueba Alejandro).
 
 **Sin verificar:** navegación y Deshacer en el emulador; que el snapshot sobreviva a `recreate()`; lectura de TalkBack de "Escena activa"; el diseño de Figma (no se leyó el archivo).
+
+
+---
+
+## TAREA LW-009b — Favoritos y "Restaurar demo"
+
+**Fecha:** 2026-10-19
+
+**Implementado:**
+- `state/Favorites.kt`: modelo `Favorite` (luz o escena), parseo/serialización de ids (descarta desconocidos y repetidos), defaults `living_plafon,relax`.
+- `AppPreferences.favorites` (clave `favorites`): ausente → defaults; presente y vacía → sin favoritos. `MainActivity` la lee y persiste cada cambio.
+- `favorites/FavoritesScreens.kt`: `FavoritesScreen` (lista / un favorito / vacío) y `FavoritesEditScreen`. Nuevos `ScreenType.FAVORITES` y `FAVORITES_EDIT` (rememberSaveable). Tocar "Plafón" abre `LightControlScreen`; "Descanso", `SCENE_DETAIL`; atrás/Volver regresan a Favoritos (`openedFromFavorites`, saveable).
+- "Restaurar demo": favoritos por defecto, `defaultLightStates()`, limpia undo y escena seleccionada, y reactiva la tarjeta "Por la hora". No toca tema ni idioma.
+- "Añadir plafón" (estado vacío) vuelve a agregar el plafón de Sala.
+- Inicio: botón "Favoritos" entre Escenas y Ajustes.
+- 12 textos nuevos en ES y EN con las mismas claves. 8 previews (4 pantallas × claro/oscuro).
+
+**Decisiones (Figma no se leyó: el MCP pide autenticación OAuth):**
+- Estado "un favorito": ítem + "Quitar <tipo>" + "Restaurar demo" + "Inicio" en la pantalla de lista (sin "Editar").
+- Estado vacío: título, texto, "Añadir plafón" e "Inicio" debajo (ajuste LW-009b-fix según Figma: ambos `ActionButton`, 48 dp).
+- Con 2+ favoritos "Restaurar demo" no aparece (solo en el estado de un favorito).
+- Al quitar el último desde Editar se vuelve al estado vacío.
+- `SceneHeader` y `CenteredText` pasaron de `private` a `internal` para reutilizarlos.
+- Detalle de ítem: "Sala · brillo" / "Sala · escena" (en EN "Living room · brightness/scene").
+
+**Verificaciones:** `Color(0x` solo en `Color.kt`; mismas claves ES/EN (salvo las 2 `translatable="false"`); sin " %%" en `values-en`.
+
+**Estados:**
+- Implementado: sí.
+- Compilado: sí, `BUILD SUCCESSFUL in 30s` tras LW-009b-fix (antes 43s) con `.\gradlew.bat :app:assembleDebug --no-daemon --stacktrace`.
+- Preview renderizado: no (solo se compilaron).
+- Instalado: no (no hay emulador activo: `adb devices` vacío).
+- Probado: no.
+
+**Sin verificar:** posición exacta de botones frente a Figma; persistencia tras cerrar/rotar; flujo quitar/añadir/restaurar; contraste en claro/oscuro; TalkBack.
+

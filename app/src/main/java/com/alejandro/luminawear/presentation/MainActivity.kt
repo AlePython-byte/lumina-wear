@@ -23,10 +23,13 @@ class MainActivity : ComponentActivity() {
         // Se leen antes de dibujar para no mostrar un tema equivocado en el primer frame.
         val initialThemeMode = prefs.themeMode
         val language = prefs.language
+        val initialFavorites = prefs.favorites
         setContent {
             WearApp(
                 initialThemeMode = initialThemeMode,
                 language = language,
+                initialFavorites = initialFavorites,
+                onFavoritesChange = { prefs.favorites = it },
                 onThemeModeChange = { prefs.themeMode = it },
                 onLanguageChange = {
                     prefs.language = it

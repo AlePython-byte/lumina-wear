@@ -88,4 +88,17 @@
     <string name="btn_turn_on">Encender</string>
     <string name="btn_turn_off">Apagar</string>
     <string name="btn_back_to_room">Volver a %1$s</string>
+
+    <string name="btn_edit">Editar</string>
+    <string name="btn_back">Volver</string>
+    <string name="btn_restore_demo">Restaurar demo</string>
+    <string name="fav_edit_title">Editar favoritos</string>
+    <string name="fav_saved_title">Accesos guardados</string>
+    <string name="fav_detail_light">%1$s · brillo</string>
+    <string name="fav_detail_scene">%1$s · escena</string>
+    <string name="fav_remove_light">Quitar %1$s</string>
+    <string name="fav_remove_scene">Quitar escena</string>
+    <string name="fav_empty_title">A un toque.</string>
+    <string name="fav_empty_body">Guarda una luz o escena para encontrarla aquí.</string>
+    <string name="fav_add_plafon">Añadir plafón</string>
 </resources>
