@@ -24,6 +24,7 @@ import com.alejandro.luminawear.presentation.rooms.RoomsScreen
 import com.alejandro.luminawear.presentation.state.rememberLightStateHolder
 import com.alejandro.luminawear.presentation.state.LightState
 import com.alejandro.luminawear.presentation.state.LightStateHolder
+import com.alejandro.luminawear.presentation.theme.LuminaTimeText
 import com.alejandro.luminawear.presentation.theme.LuminaWearTheme
 import com.alejandro.luminawear.presentation.theme.ThemeMode
 
@@ -55,7 +56,7 @@ fun WearApp() {
     }
 
     LuminaWearTheme(themeMode = themeMode) {
-        AppScaffold {
+        AppScaffold(timeText = { LuminaTimeText() }) {
             val stateHolder = rememberSaveableStateHolder()
             val currentKey = when (currentScreen) {
                 ScreenType.ROOM_DETAIL.name -> "${currentScreen}_$selectedRoomId"
@@ -164,7 +165,7 @@ private val previewInitialLightsOn = "living_plafon,living_lampara,bed_techo,bed
 @Composable
 fun PreviewHomeLightsOn() {
     LuminaWearTheme {
-        AppScaffold {
+        AppScaffold(timeText = { LuminaTimeText() }) {
             val listState = rememberTransformingLazyColumnState()
             val transformationSpec = rememberTransformationSpec()
             ScreenScaffold(scrollState = listState) { contentPadding ->
@@ -187,7 +188,7 @@ fun PreviewHomeLightsOn() {
 @Composable
 fun PreviewHomeAllOff() {
     LuminaWearTheme {
-        AppScaffold {
+        AppScaffold(timeText = { LuminaTimeText() }) {
             val listState = rememberTransformingLazyColumnState()
             val transformationSpec = rememberTransformationSpec()
             ScreenScaffold(scrollState = listState) { contentPadding ->
@@ -210,7 +211,7 @@ fun PreviewHomeAllOff() {
 @Composable
 fun PreviewRoomsScreen() {
     LuminaWearTheme {
-        AppScaffold {
+        AppScaffold(timeText = { LuminaTimeText() }) {
             val listState = rememberTransformingLazyColumnState()
             val transformationSpec = rememberTransformationSpec()
             ScreenScaffold(scrollState = listState) { contentPadding ->
@@ -237,7 +238,7 @@ fun PreviewRoomsScreen() {
 @Composable
 fun PreviewRoomsScreenAllOff() {
     LuminaWearTheme {
-        AppScaffold {
+        AppScaffold(timeText = { LuminaTimeText() }) {
             val listState = rememberTransformingLazyColumnState()
             val transformationSpec = rememberTransformationSpec()
             ScreenScaffold(scrollState = listState) { contentPadding ->
@@ -263,7 +264,7 @@ fun PreviewRoomsScreenAllOff() {
 @Composable
 fun PreviewRoomDetailScreen() {
     LuminaWearTheme {
-        AppScaffold {
+        AppScaffold(timeText = { LuminaTimeText() }) {
             val listState = rememberTransformingLazyColumnState()
             val transformationSpec = rememberTransformationSpec()
             val holder = rememberLightStateHolder()
@@ -288,7 +289,7 @@ fun PreviewRoomDetailScreen() {
 @Composable
 fun PreviewRoomDetailScreenAllOff() {
     LuminaWearTheme {
-        AppScaffold {
+        AppScaffold(timeText = { LuminaTimeText() }) {
             val listState = rememberTransformingLazyColumnState()
             val transformationSpec = rememberTransformationSpec()
             val holder = LightStateHolder(emptyMap())
@@ -313,7 +314,7 @@ fun PreviewRoomDetailScreenAllOff() {
 @Composable
 fun PreviewLightControlOn() {
     LuminaWearTheme {
-        AppScaffold {
+        AppScaffold(timeText = { LuminaTimeText() }) {
             val listState = rememberTransformingLazyColumnState()
             val transformationSpec = rememberTransformationSpec()
             ScreenScaffold(scrollState = listState) { contentPadding ->
@@ -339,7 +340,7 @@ fun PreviewLightControlOn() {
 @Composable
 fun PreviewLightControlOff() {
     LuminaWearTheme {
-        AppScaffold {
+        AppScaffold(timeText = { LuminaTimeText() }) {
             val listState = rememberTransformingLazyColumnState()
             val transformationSpec = rememberTransformationSpec()
             ScreenScaffold(scrollState = listState) { contentPadding ->
@@ -365,7 +366,7 @@ fun PreviewLightControlOff() {
 @Composable
 fun PreviewLightControlMin() {
     LuminaWearTheme {
-        AppScaffold {
+        AppScaffold(timeText = { LuminaTimeText() }) {
             val listState = rememberTransformingLazyColumnState()
             val transformationSpec = rememberTransformationSpec()
             ScreenScaffold(scrollState = listState) { contentPadding ->
@@ -391,7 +392,7 @@ fun PreviewLightControlMin() {
 @Composable
 fun PreviewLightControlMax() {
     LuminaWearTheme {
-        AppScaffold {
+        AppScaffold(timeText = { LuminaTimeText() }) {
             val listState = rememberTransformingLazyColumnState()
             val transformationSpec = rememberTransformationSpec()
             ScreenScaffold(scrollState = listState) { contentPadding ->
@@ -418,7 +419,7 @@ fun PreviewLightControlMax() {
 @Composable
 fun PreviewHomeLight() {
     LuminaWearTheme(themeMode = ThemeMode.LIGHT) {
-        AppScaffold {
+        AppScaffold(timeText = { LuminaTimeText() }) {
             val listState = rememberTransformingLazyColumnState()
             val transformationSpec = rememberTransformationSpec()
             ScreenScaffold(scrollState = listState) { contentPadding ->
@@ -440,7 +441,7 @@ fun PreviewHomeLight() {
 @Composable
 fun PreviewHomeDark() {
     LuminaWearTheme(themeMode = ThemeMode.DARK) {
-        AppScaffold {
+        AppScaffold(timeText = { LuminaTimeText() }) {
             val listState = rememberTransformingLazyColumnState()
             val transformationSpec = rememberTransformationSpec()
             ScreenScaffold(scrollState = listState) { contentPadding ->
@@ -462,7 +463,7 @@ fun PreviewHomeDark() {
 @Composable
 fun PreviewRoomsLight() {
     LuminaWearTheme(themeMode = ThemeMode.LIGHT) {
-        AppScaffold {
+        AppScaffold(timeText = { LuminaTimeText() }) {
             val listState = rememberTransformingLazyColumnState()
             val transformationSpec = rememberTransformationSpec()
             ScreenScaffold(scrollState = listState) { contentPadding ->
@@ -488,7 +489,7 @@ fun PreviewRoomsLight() {
 @Composable
 fun PreviewRoomsDark() {
     LuminaWearTheme(themeMode = ThemeMode.DARK) {
-        AppScaffold {
+        AppScaffold(timeText = { LuminaTimeText() }) {
             val listState = rememberTransformingLazyColumnState()
             val transformationSpec = rememberTransformationSpec()
             ScreenScaffold(scrollState = listState) { contentPadding ->
@@ -514,7 +515,7 @@ fun PreviewRoomsDark() {
 @Composable
 fun PreviewRoomDetailLight() {
     LuminaWearTheme(themeMode = ThemeMode.LIGHT) {
-        AppScaffold {
+        AppScaffold(timeText = { LuminaTimeText() }) {
             val listState = rememberTransformingLazyColumnState()
             val transformationSpec = rememberTransformationSpec()
             val holder = rememberLightStateHolder()
@@ -538,7 +539,7 @@ fun PreviewRoomDetailLight() {
 @Composable
 fun PreviewRoomDetailDark() {
     LuminaWearTheme(themeMode = ThemeMode.DARK) {
-        AppScaffold {
+        AppScaffold(timeText = { LuminaTimeText() }) {
             val listState = rememberTransformingLazyColumnState()
             val transformationSpec = rememberTransformationSpec()
             val holder = rememberLightStateHolder()
@@ -562,7 +563,7 @@ fun PreviewRoomDetailDark() {
 @Composable
 fun PreviewLightControlLight() {
     LuminaWearTheme(themeMode = ThemeMode.LIGHT) {
-        AppScaffold {
+        AppScaffold(timeText = { LuminaTimeText() }) {
             val listState = rememberTransformingLazyColumnState()
             val transformationSpec = rememberTransformationSpec()
             ScreenScaffold(scrollState = listState) { contentPadding ->
@@ -587,7 +588,7 @@ fun PreviewLightControlLight() {
 @Composable
 fun PreviewLightControlDark() {
     LuminaWearTheme(themeMode = ThemeMode.DARK) {
-        AppScaffold {
+        AppScaffold(timeText = { LuminaTimeText() }) {
             val listState = rememberTransformingLazyColumnState()
             val transformationSpec = rememberTransformationSpec()
             ScreenScaffold(scrollState = listState) { contentPadding ->

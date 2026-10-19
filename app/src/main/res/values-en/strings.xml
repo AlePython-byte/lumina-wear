@@ -13,7 +13,7 @@
     <string name="help_swipe_more">Swipe for more ↓</string>
     <string name="card_by_time">BY TIME OF DAY</string>
     <string name="card_rest">Rest</string>
-    <string name="card_room_percent">%1$s · %2$d %%</string>
+    <string name="card_room_percent">%1$s · %2$d%%</string>
 
     <string name="room_living">Living room</string>
     <string name="room_bedroom">Bedroom</string>
@@ -28,7 +28,7 @@
     <string name="light_escritorio">Desk</string>
     <string name="light_ambiente">Ambient light</string>
 
-    <string name="light_state_on_percent">On · %1$d %%</string>
+    <string name="light_state_on_percent">On · %1$d%%</string>
     <string name="light_state_off">Off</string>
     <string name="room_lights_counter">%1$d of %2$d on</string>
 

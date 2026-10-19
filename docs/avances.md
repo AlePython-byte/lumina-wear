@@ -227,6 +227,8 @@
 - Selector de tema y persistencia (LW-008).
 - Revisar en emulador ambos temas, con atención al contraste de border en oscuro (1.74:1, decorativo).
 
+**Retoque LW-007c (2026-10-18):** el reloj del sistema ahora sale de `LuminaTimeText` (`theme/Theme.kt`), con color `muted` y tamaño del estilo `time`, pasado a cada `AppScaffold` en `WearApp.kt`. Contraste: claro 6.52:1 (muted/bg), oscuro 7.05:1. En `values-en/strings.xml` los porcentajes pasan a "72%" sin espacio (el español no cambia); mismas 44 claves en ambos idiomas. Compilado (`BUILD SUCCESSFUL in 58s`); sin instalar ni probar. El reloj usa el `TextStyle` `time` completo (incluida Roboto Flex) mediante `CurvedTextStyle(TextStyle)`.
+
 ---
 
 ## TAREA LW-007b — Conectar la fuente Roboto Flex

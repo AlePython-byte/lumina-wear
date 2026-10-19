@@ -3,8 +3,11 @@ package com.alejandro.luminawear.presentation.theme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.wear.compose.foundation.CurvedTextStyle
 import androidx.wear.compose.material3.ColorScheme
 import androidx.wear.compose.material3.MaterialTheme
+import androidx.wear.compose.material3.TimeText
+import androidx.wear.compose.material3.timeTextCurvedText
 import androidx.wear.compose.material3.Typography
 
 enum class ThemeMode { LIGHT, DARK }
@@ -47,6 +50,15 @@ private val luminaMaterialTypography = Typography(
     labelMedium = LuminaTypography.button,
     labelSmall = LuminaTypography.label
 )
+
+/** Reloj del sistema con el estilo `time` y el color `muted` del tema activo. */
+@Composable
+fun LuminaTimeText() {
+    val style = CurvedTextStyle(LuminaTypography.time.copy(color = LuminaTheme.colors.muted))
+    TimeText { time ->
+        timeTextCurvedText(time, style)
+    }
+}
 
 @Composable
 fun LuminaWearTheme(
