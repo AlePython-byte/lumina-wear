@@ -43,7 +43,7 @@ Tipografía (`Type.kt`, familia en `LuminaFontFamily`): display Black 48/48 · t
 | RoomControl | `RoomControlTokens` | surface · border · text · muted |
 | SceneCard | `SceneCardTokens` | surface · accentContent · text · muted |
 | LightToggle | `LightToggleTokens` | luz apagada accent/onAccent (pressed) · luz encendida surface/text/border |
-| NavigationItem | `NavigationItemTokens` | surface · text · disabled muted · border |
+| NavigationItem | `NavigationItemTokens` | surface · text · disabled muted · border · **Selected**: surface + borde accentContent + detalle accentContent (opciones de Ajustes, 60 dp) |
 | BrightnessDial | `BrightnessDialTokens` | arco accentContent · pista border · valor text/muted · etiqueta muted |
 | StepButton | `StepButtonTokens` | surface · text · disabled muted · border |
 
@@ -64,3 +64,10 @@ Tipografía (`Type.kt`, familia en `LuminaFontFamily`): display Black 48/48 · t
 - Fuente: **Roboto Flex** (fuente variable), licencia **SIL Open Font License 1.1** (texto en `docs/licenses/OFL.txt`).
 - Archivo: `app/src/main/res/font/roboto_flex.ttf`.
 - El `FontFamily` se define en un solo lugar: `LuminaFontFamily` en `theme/Type.kt` (pesos 400, 700 y 900 vía `FontVariation.weight`). Todo texto usa `LuminaTypography`.
+
+## Preferencias
+
+- Dónde: `SharedPreferences` `luminawear_prefs` (clase `AppPreferences` en `state/AppPreferences.kt`), sin dependencias.
+- Qué: `theme_mode` (`light` / `dark`) y `language` (`es` / `en`). Se escriben con `apply()`.
+- Por defecto: valor ausente o inválido → tema **LIGHT** e idioma **ES** (aunque el sistema esté en inglés).
+- Lectura: `MainActivity` las lee antes de `setContent`; el idioma se aplica en `attachBaseContext` y cambiarlo llama a `recreate()`.

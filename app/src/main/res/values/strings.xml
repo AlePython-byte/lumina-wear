@@ -37,6 +37,18 @@
     <string name="access_favorites">Favoritos</string>
     <string name="access_voice">Voz</string>
 
+    <string name="access_settings">Ajustes</string>
+
+    <string name="settings_title">Ajustes</string>
+    <string name="settings_theme_light">Claro</string>
+    <string name="settings_theme_dark">Oscuro</string>
+    <string name="settings_default">Predeterminado</string>
+    <string name="settings_optional">Opcional</string>
+    <string name="settings_language_title">Idioma</string>
+    <string name="settings_language_es" translatable="false">Español</string>
+    <string name="settings_language_en" translatable="false">English</string>
+    <string name="settings_note">Claro por defecto · Oscuro opcional</string>
+
     <string name="btn_home">Inicio</string>
 
     <string name="light_control_title">%1$s · %2$s</string>

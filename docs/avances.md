@@ -253,3 +253,32 @@
 - Solo se usan los ejes de peso (400, 700, 900). No se aplican otros ejes de Roboto Flex (ancho, óptico, etc.).
 - Que el peso 900 se vea distinto del 700 en el emulador no está verificado.
 - `FontVariation` se marca como API experimental de texto (`ExperimentalTextApi`); por eso el `@OptIn`.
+
+---
+
+## TAREA LW-008 — Pantalla Ajustes: tema e idioma con persistencia
+
+**Fecha:** 2026-10-18
+
+**Implementado:**
+- `state/AppPreferences.kt`: `SharedPreferences` `luminawear_prefs`, claves `theme_mode` (light/dark) y `language` (es/en); ausente o inválido → LIGHT y ES. Escritura con `apply()`. Enum `AppLanguage`.
+- `MainActivity`: lee las preferencias antes de `setContent`; `attachBaseContext` envuelve el contexto con la `Configuration` del idioma guardado (`createConfigurationContext`); al elegir otro idioma guarda y llama a `recreate()`.
+- `WearApp`: recibe tema inicial, idioma y callbacks; `themeMode` sigue siendo un solo estado (rememberSaveable). Nuevo `ScreenType.SETTINGS`; el botón atrás vuelve a Inicio.
+- `settings/SettingsScreen.kt`: encabezado DEMO + AJUSTES, opciones Claro/Oscuro, ayuda "Desliza para más ↓", sección IDIOMA, opciones Español/English, botón Inicio y nota. Las opciones tienen `selectable(role = RadioButton)`, 60 dp mínimo y botón de 48 dp.
+- `NavigationItemTokens`: estado Selected (borde y detalle `accentContent`) y medidas de opción.
+- Inicio: nuevo ítem "Ajustes" (`NavigationItem`) al final de la lista.
+- Textos: 8 claves nuevas traducibles en `values/` y `values-en/`; `settings_language_es` y `settings_language_en` son `translatable="false"` y existen solo en `values/`. En inglés, `help_swipe_more` pasó a "Scroll for more ↓" (también afecta a Inicio).
+- Previews de Ajustes en claro y oscuro. Docs: `design-tokens.md` (Selected y Preferencias).
+
+**Verificaciones:**
+- Claves: 52 traducibles en `values/` = 52 en `values-en/` (más 2 `translatable="false"` solo en `values/`). Grep de " %%" en `values-en`: vacío.
+- `Color(0x` solo en `theme/Color.kt`; sin literales visibles ni estilos sueltos fuera de `theme/`.
+
+**Estados:**
+- Implementado: sí.
+- Compilado: sí, `BUILD SUCCESSFUL in 51s` con `.\gradlew.bat :app:assembleDebug --no-daemon --stacktrace`.
+- Preview renderizado: no.
+- Instalado: no.
+- Probado: no (lo prueba Alejandro).
+
+**Sin verificar:** que `recreate()` conserve la pantalla y las luces; que `stringResource` y `pluralStringResource` tomen el idioma nuevo; la lectura de TalkBack ("Claro, Predeterminado, seleccionado"); la posición del ítem "Ajustes" en Inicio respecto a Figma (no se leyó el archivo).

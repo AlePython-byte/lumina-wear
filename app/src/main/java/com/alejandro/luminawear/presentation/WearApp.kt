@@ -21,6 +21,8 @@ import com.alejandro.luminawear.presentation.models.appLights
 import com.alejandro.luminawear.presentation.models.appRooms
 import com.alejandro.luminawear.presentation.rooms.RoomDetailScreen
 import com.alejandro.luminawear.presentation.rooms.RoomsScreen
+import com.alejandro.luminawear.presentation.settings.SettingsScreen
+import com.alejandro.luminawear.presentation.state.AppLanguage
 import com.alejandro.luminawear.presentation.state.rememberLightStateHolder
 import com.alejandro.luminawear.presentation.state.LightState
 import com.alejandro.luminawear.presentation.state.LightStateHolder
@@ -28,10 +30,15 @@ import com.alejandro.luminawear.presentation.theme.LuminaTimeText
 import com.alejandro.luminawear.presentation.theme.LuminaWearTheme
 import com.alejandro.luminawear.presentation.theme.ThemeMode
 
-enum class ScreenType { HOME, ROOMS, ROOM_DETAIL, LIGHT_CONTROL }
+enum class ScreenType { HOME, ROOMS, ROOM_DETAIL, LIGHT_CONTROL, SETTINGS }
 
 @Composable
-fun WearApp() {
+fun WearApp(
+    initialThemeMode: ThemeMode = ThemeMode.LIGHT,
+    language: AppLanguage = AppLanguage.ES,
+    onThemeModeChange: (ThemeMode) -> Unit = {},
+    onLanguageChange: (AppLanguage) -> Unit = {}
+) {
     val lightStateHolder = rememberLightStateHolder()
 
     val totalLights = appLights.size
@@ -40,8 +47,8 @@ fun WearApp() {
     var currentScreen by rememberSaveable { mutableStateOf(ScreenType.HOME.name) }
     var selectedRoomId by rememberSaveable { mutableStateOf("") }
     var selectedLightId by rememberSaveable { mutableStateOf("") }
-    // Único dueño del tema; LW-008 lo conecta al selector y a la persistencia.
-    var themeMode by rememberSaveable { mutableStateOf(ThemeMode.LIGHT) }
+    // Único dueño del tema; MainActivity entrega el valor guardado y persiste los cambios.
+    var themeMode by rememberSaveable { mutableStateOf(initialThemeMode) }
 
     BackHandler(currentScreen != ScreenType.HOME.name) {
         when (currentScreen) {
@@ -52,6 +59,7 @@ fun WearApp() {
             }
             ScreenType.ROOM_DETAIL.name -> currentScreen = ScreenType.ROOMS.name
             ScreenType.ROOMS.name -> currentScreen = ScreenType.HOME.name
+            ScreenType.SETTINGS.name -> currentScreen = ScreenType.HOME.name
         }
     }
 
@@ -77,6 +85,22 @@ fun WearApp() {
                                 totalLights = totalLights,
                                 onTurnOffAllClick = { lightStateHolder.turnOffAll() },
                                 onRoomsClick = { currentScreen = ScreenType.ROOMS.name },
+                                onSettingsClick = { currentScreen = ScreenType.SETTINGS.name },
+                                contentPadding = contentPadding,
+                                listState = listState,
+                                transformationSpec = transformationSpec
+                            )
+                        }
+                        ScreenType.SETTINGS.name -> {
+                            SettingsScreen(
+                                themeMode = themeMode,
+                                language = language,
+                                onThemeModeChange = {
+                                    themeMode = it
+                                    onThemeModeChange(it)
+                                },
+                                onLanguageChange = onLanguageChange,
+                                onHomeClick = { currentScreen = ScreenType.HOME.name },
                                 contentPadding = contentPadding,
                                 listState = listState,
                                 transformationSpec = transformationSpec
@@ -600,6 +624,52 @@ fun PreviewLightControlDark() {
                     onBrightnessChange = {},
                     onTogglePower = {},
                     onBackClick = {},
+                    contentPadding = contentPadding,
+                    listState = listState,
+                    transformationSpec = transformationSpec
+                )
+            }
+        }
+    }
+}
+
+@WearPreviewDevices
+@Composable
+fun PreviewSettingsLight() {
+    LuminaWearTheme(themeMode = ThemeMode.LIGHT) {
+        AppScaffold(timeText = { LuminaTimeText() }) {
+            val listState = rememberTransformingLazyColumnState()
+            val transformationSpec = rememberTransformationSpec()
+            ScreenScaffold(scrollState = listState) { contentPadding ->
+                SettingsScreen(
+                    themeMode = ThemeMode.LIGHT,
+                    language = AppLanguage.ES,
+                    onThemeModeChange = {},
+                    onLanguageChange = {},
+                    onHomeClick = {},
+                    contentPadding = contentPadding,
+                    listState = listState,
+                    transformationSpec = transformationSpec
+                )
+            }
+        }
+    }
+}
+
+@WearPreviewDevices
+@Composable
+fun PreviewSettingsDark() {
+    LuminaWearTheme(themeMode = ThemeMode.DARK) {
+        AppScaffold(timeText = { LuminaTimeText() }) {
+            val listState = rememberTransformingLazyColumnState()
+            val transformationSpec = rememberTransformationSpec()
+            ScreenScaffold(scrollState = listState) { contentPadding ->
+                SettingsScreen(
+                    themeMode = ThemeMode.DARK,
+                    language = AppLanguage.EN,
+                    onThemeModeChange = {},
+                    onLanguageChange = {},
+                    onHomeClick = {},
                     contentPadding = contentPadding,
                     listState = listState,
                     transformationSpec = transformationSpec

@@ -45,6 +45,7 @@ fun HomeScreen(
     totalLights: Int,
     onTurnOffAllClick: () -> Unit,
     onRoomsClick: () -> Unit,
+    onSettingsClick: () -> Unit = {},
     contentPadding: PaddingValues,
     listState: TransformingLazyColumnState,
     transformationSpec: TransformationSpec
@@ -173,6 +174,7 @@ fun HomeScreen(
         item { SecondaryAccessButton(stringResource(R.string.access_scenes), this, transformationSpec) }
         item { SecondaryAccessButton(stringResource(R.string.access_favorites), this, transformationSpec) }
         item { SecondaryAccessButton(stringResource(R.string.access_voice), this, transformationSpec) }
+        item { SecondaryAccessButton(stringResource(R.string.access_settings), this, transformationSpec, true, onSettingsClick) }
     }
 }
 

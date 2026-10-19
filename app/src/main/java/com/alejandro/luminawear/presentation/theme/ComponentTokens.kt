@@ -67,8 +67,15 @@ object NavigationItemTokens {
     val containerDisabled: Color @Composable get() = LuminaTheme.colors.surface
     val contentDisabled: Color @Composable get() = LuminaTheme.colors.muted
     val border: Color @Composable get() = LuminaTheme.colors.border
+    val detail: Color @Composable get() = LuminaTheme.colors.muted
+    // Estado Selected (opciones de Ajustes)
+    val containerSelected: Color @Composable get() = LuminaTheme.colors.surface
+    val borderSelected: Color @Composable get() = LuminaTheme.colors.accentContent
+    val detailSelected: Color @Composable get() = LuminaTheme.colors.accentContent
     val radius: Dp = LuminaRadius.sm
     val minHeight: Dp = LuminaSizes.touch
+    val optionMinHeight: Dp = 60.dp // fuera de escala: alto de opción en Figma
+    val optionPaddingHorizontal: Dp = LuminaSpacing.md
 }
 
 object BrightnessDialTokens {
