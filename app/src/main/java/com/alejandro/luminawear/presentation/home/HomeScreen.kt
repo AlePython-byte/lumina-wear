@@ -31,6 +31,8 @@ import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.TransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
 import com.alejandro.luminawear.R
+import com.alejandro.luminawear.presentation.models.Scene
+import com.alejandro.luminawear.presentation.scenes.sceneRoomPercentSpaced
 import com.alejandro.luminawear.presentation.theme.ActionButtonTokens
 import com.alejandro.luminawear.presentation.theme.LuminaBorder
 import com.alejandro.luminawear.presentation.theme.LuminaSpacing
@@ -45,7 +47,10 @@ fun HomeScreen(
     totalLights: Int,
     onTurnOffAllClick: () -> Unit,
     onRoomsClick: () -> Unit,
+    onScenesClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
+    suggestion: Scene? = null,
+    onSuggestionClick: () -> Unit = {},
     contentPadding: PaddingValues,
     listState: TransformingLazyColumnState,
     transformationSpec: TransformationSpec
@@ -137,43 +142,42 @@ fun HomeScreen(
                     .transformedHeight(this, transformationSpec)
             )
         }
-        item {
-            Card(
-                onClick = { /* TODO */ },
-                enabled = false,
-                colors = CardDefaults.cardColors(
-                    containerColor = SceneCardTokens.container
-                ),
-                shape = RoundedCornerShape(SceneCardTokens.radius),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = LuminaSpacing.xs)
-                    .transformedHeight(this, transformationSpec),
-                transformation = SurfaceTransformation(transformationSpec)
-            ) {
-                Column(modifier = Modifier.padding(SceneCardTokens.padding)) {
-                    Text(
-                        text = stringResource(R.string.card_by_time),
-                        style = LuminaTypography.label,
-                        color = SceneCardTokens.eyebrow
-                    )
-                    Text(
-                        text = stringResource(R.string.card_rest),
-                        style = LuminaTypography.title,
-                        color = SceneCardTokens.title
-                    )
-                    Text(
-                        text = stringResource(R.string.card_room_percent, stringResource(R.string.room_living), 30),
-                        style = LuminaTypography.body,
-                        color = SceneCardTokens.subtitle
-                    )
+        if (suggestion != null) {
+            item {
+                Card(
+                    onClick = onSuggestionClick,
+                    colors = CardDefaults.cardColors(
+                        containerColor = SceneCardTokens.container
+                    ),
+                    shape = RoundedCornerShape(SceneCardTokens.radius),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = LuminaSpacing.xs)
+                        .transformedHeight(this, transformationSpec),
+                    transformation = SurfaceTransformation(transformationSpec)
+                ) {
+                    Column(modifier = Modifier.padding(SceneCardTokens.padding)) {
+                        Text(
+                            text = stringResource(R.string.card_by_time),
+                            style = LuminaTypography.label,
+                            color = SceneCardTokens.eyebrow
+                        )
+                        Text(
+                            text = stringResource(suggestion.nameRes),
+                            style = LuminaTypography.title,
+                            color = SceneCardTokens.title
+                        )
+                        Text(
+                            text = sceneRoomPercentSpaced(suggestion),
+                            style = LuminaTypography.body,
+                            color = SceneCardTokens.subtitle
+                        )
+                    }
                 }
             }
         }
         item { SecondaryAccessButton(stringResource(R.string.access_rooms), this, transformationSpec, true, onRoomsClick) }
-        item { SecondaryAccessButton(stringResource(R.string.access_scenes), this, transformationSpec) }
-        item { SecondaryAccessButton(stringResource(R.string.access_favorites), this, transformationSpec) }
-        item { SecondaryAccessButton(stringResource(R.string.access_voice), this, transformationSpec) }
+        item { SecondaryAccessButton(stringResource(R.string.access_scenes), this, transformationSpec, true, onScenesClick) }
         item { SecondaryAccessButton(stringResource(R.string.access_settings), this, transformationSpec, true, onSettingsClick) }
     }
 }

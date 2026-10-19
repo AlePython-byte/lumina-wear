@@ -12,7 +12,6 @@
     <string name="btn_all_off">Todo apagado</string>
     <string name="help_swipe_more">Desliza para más ↓</string>
     <string name="card_by_time">POR LA HORA</string>
-    <string name="card_rest">Descanso</string>
     <string name="card_room_percent">%1$s · %2$d %%</string>
 
     <string name="room_living">Sala</string>
@@ -48,6 +47,31 @@
     <string name="settings_language_es" translatable="false">Español</string>
     <string name="settings_language_en" translatable="false">English</string>
     <string name="settings_note">Claro por defecto · Oscuro opcional</string>
+
+    <string name="scene_relax_name">Descanso</string>
+    <string name="scene_read_name">Lectura</string>
+    <string name="scene_focus_name">Concentración</string>
+    <string name="scene_sleep_name">Buenas noches</string>
+    <string name="scene_relax_desc">Luz tenue para cerrar el día.</string>
+    <string name="scene_read_desc">Luz cómoda para leer en la cama.</string>
+    <string name="scene_focus_desc">Luz clara para trabajar sin distracciones.</string>
+    <string name="scene_sleep_desc">Apaga las ocho luces.</string>
+    <string name="scene_room_all">Toda la casa</string>
+    <string name="scene_all_off">Todas apagadas</string>
+    <string name="scene_room_percent_tight">%1$s · %2$d%%</string>
+    <string name="scene_btn_activate">Activar</string>
+    <string name="scene_active_title">Escena activa</string>
+    <string name="scene_btn_undo">Deshacer</string>
+    <string name="scene_btn_undo_desc">Deshacer la escena y restaurar las luces</string>
+
+    <string name="suggestion_title">Sugerencia</string>
+    <string name="suggestion_text_relax">Por la hora: una luz más tenue para la noche.</string>
+    <string name="suggestion_text_focus">Por la hora: luz clara para empezar el día.</string>
+    <string name="suggestion_text_read">Por la hora: luz cómoda para la tarde.</string>
+    <string name="suggestion_text_sleep">Por la hora: es tarde, apaga las luces y descansa.</string>
+    <string name="suggestion_btn_view">Ver escena</string>
+    <string name="suggestion_btn_dismiss">Ahora no</string>
+    <string name="suggestion_note">Basada en horario. Sin historial de hábitos.</string>
 
     <string name="btn_home">Inicio</string>
 

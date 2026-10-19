@@ -1,6 +1,5 @@
 package com.alejandro.luminawear.presentation.settings
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -8,18 +7,14 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
-import androidx.wear.compose.foundation.lazy.TransformingLazyColumnItemScope
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumnState
 import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.ButtonDefaults
@@ -29,6 +24,7 @@ import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.TransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
 import com.alejandro.luminawear.R
+import com.alejandro.luminawear.presentation.components.NavigationItem
 import com.alejandro.luminawear.presentation.state.AppLanguage
 import com.alejandro.luminawear.presentation.theme.ActionButtonTokens
 import com.alejandro.luminawear.presentation.theme.LuminaBorder
@@ -79,7 +75,7 @@ fun SettingsScreen(
             }
         }
         item {
-            SettingsOption(
+            NavigationItem(
                 title = stringResource(R.string.settings_theme_light),
                 detail = stringResource(R.string.settings_default),
                 selected = themeMode == ThemeMode.LIGHT,
@@ -89,7 +85,7 @@ fun SettingsScreen(
             )
         }
         item {
-            SettingsOption(
+            NavigationItem(
                 title = stringResource(R.string.settings_theme_dark),
                 detail = stringResource(R.string.settings_optional),
                 selected = themeMode == ThemeMode.DARK,
@@ -122,7 +118,7 @@ fun SettingsScreen(
             )
         }
         item {
-            SettingsOption(
+            NavigationItem(
                 title = stringResource(R.string.settings_language_es),
                 detail = stringResource(R.string.settings_default),
                 selected = language == AppLanguage.ES,
@@ -132,7 +128,7 @@ fun SettingsScreen(
             )
         }
         item {
-            SettingsOption(
+            NavigationItem(
                 title = stringResource(R.string.settings_language_en),
                 detail = stringResource(R.string.settings_optional),
                 selected = language == AppLanguage.EN,
@@ -177,45 +173,5 @@ fun SettingsScreen(
                     .transformedHeight(this, transformationSpec)
             )
         }
-    }
-}
-
-/** NavigationItem de 60 dp con estado Selected y semántica de RadioButton. */
-@Composable
-private fun SettingsOption(
-    title: String,
-    detail: String,
-    selected: Boolean,
-    scope: TransformingLazyColumnItemScope,
-    transformationSpec: TransformationSpec,
-    onClick: () -> Unit
-) {
-    val shape = RoundedCornerShape(NavigationItemTokens.radius)
-    Column(
-        verticalArrangement = Arrangement.Center,
-        modifier = Modifier
-            .fillMaxWidth()
-            .transformedHeight(scope, transformationSpec)
-            .heightIn(min = NavigationItemTokens.optionMinHeight)
-            .clip(shape)
-            .background(if (selected) NavigationItemTokens.containerSelected else NavigationItemTokens.container)
-            .border(
-                LuminaBorder.width,
-                if (selected) NavigationItemTokens.borderSelected else NavigationItemTokens.border,
-                shape
-            )
-            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
-            .padding(horizontal = NavigationItemTokens.optionPaddingHorizontal)
-    ) {
-        Text(
-            text = title,
-            style = LuminaTypography.button,
-            color = NavigationItemTokens.content
-        )
-        Text(
-            text = detail,
-            style = LuminaTypography.label,
-            color = if (selected) NavigationItemTokens.detailSelected else NavigationItemTokens.detail
-        )
     }
 }

@@ -12,7 +12,6 @@
     <string name="btn_all_off">All off</string>
     <string name="help_swipe_more">Scroll for more ↓</string>
     <string name="card_by_time">BY TIME OF DAY</string>
-    <string name="card_rest">Rest</string>
     <string name="card_room_percent">%1$s · %2$d%%</string>
 
     <string name="room_living">Living room</string>
@@ -46,6 +45,31 @@
     <string name="settings_optional">Optional</string>
     <string name="settings_language_title">Language</string>
     <string name="settings_note">Light by default · Dark optional</string>
+
+    <string name="scene_relax_name">Relax</string>
+    <string name="scene_read_name">Reading</string>
+    <string name="scene_focus_name">Focus</string>
+    <string name="scene_sleep_name">Good night</string>
+    <string name="scene_relax_desc">Soft light to wind down the day.</string>
+    <string name="scene_read_desc">Comfortable light for reading in bed.</string>
+    <string name="scene_focus_desc">Bright light to work without distractions.</string>
+    <string name="scene_sleep_desc">Turns off all eight lights.</string>
+    <string name="scene_room_all">Whole house</string>
+    <string name="scene_all_off">All off</string>
+    <string name="scene_room_percent_tight">%1$s · %2$d%%</string>
+    <string name="scene_btn_activate">Activate</string>
+    <string name="scene_active_title">Scene active</string>
+    <string name="scene_btn_undo">Undo</string>
+    <string name="scene_btn_undo_desc">Undo the scene and restore the lights</string>
+
+    <string name="suggestion_title">Suggestion</string>
+    <string name="suggestion_text_relax">For this time of day: dimmer light for the evening.</string>
+    <string name="suggestion_text_focus">For this time of day: bright light to start the day.</string>
+    <string name="suggestion_text_read">For this time of day: comfortable light for the afternoon.</string>
+    <string name="suggestion_text_sleep">For this time of day: it’s late, turn off the lights and rest.</string>
+    <string name="suggestion_btn_view">View scene</string>
+    <string name="suggestion_btn_dismiss">Not now</string>
+    <string name="suggestion_note">Based on the time of day. No habit history.</string>
 
     <string name="btn_home">Home</string>
 

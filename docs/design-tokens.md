@@ -52,11 +52,13 @@ Tipografía (`Type.kt`, familia en `LuminaFontFamily`): display Black 48/48 · t
 | Nivel | Elementos | Archivo |
 |---|---|---|
 | Fundamentos | paleta, semánticos, escala, tipografía, tema | `theme/Color.kt`, `Tokens.kt`, `Type.kt`, `ComponentTokens.kt`, `Theme.kt` |
-| Átomos | `StepButton`, `SecondaryAccessButton` (NavigationItem), textos con `LuminaTypography` | `lights/LightControlScreen.kt`, `home/HomeScreen.kt` |
-| Moléculas | RoomControl (tarjeta de habitación / luz con StatusChip), SceneCard, encabezado DEMO + título | `rooms/RoomsScreen.kt`, `rooms/RoomDetailScreen.kt`, `home/HomeScreen.kt` |
+| Átomos | `StepButton`, `SecondaryAccessButton` (NavigationItem), `ActionButton` (primario/secundario, 48 dp), textos con `LuminaTypography` | `lights/LightControlScreen.kt`, `home/HomeScreen.kt`, `components/ActionButton.kt` |
+| Moléculas | RoomControl (tarjeta de habitación / luz con StatusChip), SceneCard (sugerencia "Por la hora" dinámica), `NavigationItem` de 60 dp (clic o selección: Ajustes y lista de Escenas), encabezado DEMO + título | `rooms/RoomsScreen.kt`, `rooms/RoomDetailScreen.kt`, `home/HomeScreen.kt`, `components/NavigationItem.kt`, `scenes/SceneScreens.kt` |
 | Organismos | BrightnessDial (arco + valor), fila de StepButtons, listas `TransformingLazyColumn` | `lights/LightControlScreen.kt`, todas las pantallas |
 | Plantillas | `AppScaffold` + `ScreenScaffold` + navegación | `WearApp.kt` |
-| Páginas | `HomeScreen`, `RoomsScreen`, `RoomDetailScreen`, `LightControlScreen` | `home/`, `rooms/`, `lights/` |
+| Páginas | `HomeScreen`, `RoomsScreen`, `RoomDetailScreen`, `LightControlScreen`, `SettingsScreen`, `ScenesScreen`, `SceneDetailScreen`, `SceneActiveScreen`, `SuggestionScreen` | `home/`, `rooms/`, `lights/`, `settings/`, `scenes/SceneScreens.kt` |
+
+Lógica sin UI de escenas: `models/Scenes.kt` (modelo, `suggestionForHour`) y `state/SceneLogic.kt` (`applyScene`, función pura). Estados por defecto: `defaultLightStates()` en `state/LightStateHolder.kt`.
 
 
 ## Tipografía y licencia

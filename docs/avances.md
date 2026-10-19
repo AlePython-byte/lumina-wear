@@ -282,3 +282,32 @@
 - Probado: no (lo prueba Alejandro).
 
 **Sin verificar:** que `recreate()` conserve la pantalla y las luces; que `stringResource` y `pluralStringResource` tomen el idioma nuevo; la lectura de TalkBack ("Claro, Predeterminado, seleccionado"); la posición del ítem "Ajustes" en Inicio respecto a Figma (no se leyó el archivo).
+
+
+---
+
+## TAREA LW-009a — Escenas, sugerencia "Por la hora" y Deshacer
+
+**Fecha:** 2026-10-18
+
+**Implementado:**
+- Estados por defecto unificados: `defaultLightStates()` en `LightStateHolder.kt` la usan `rememberLightStateHolder` y el Saver (antes la lista estaba duplicada). Mismo estado de antes (5/8; 2/3, 2/3, 1/2). `serializeLightStates` / `parseLightStates` comparten el formato del Saver con el snapshot de Deshacer.
+- Modelo `Scene` (relax, read, focus, sleep) en `models/Scenes.kt`, `suggestionForHour(hour)` y `applyScene(...)` (función pura en `state/SceneLogic.kt`). 0% apaga conservando el brillo recordado; si no, enciende con el porcentaje; las demás luces no cambian.
+- Pantallas nuevas (`scenes/SceneScreens.kt`): SCENES, SCENE_DETAIL, SCENE_ACTIVE, SUGGESTION. Componentes compartidos nuevos: `components/ActionButton.kt` y `components/NavigationItem.kt` (Ajustes ahora reutiliza este último).
+- Deshacer: una sola capa; el snapshot es un `rememberSaveable` de texto (sobrevive a `recreate()`); se descarta con "Inicio" o con atrás desde SCENE_ACTIVE.
+- Inicio: tarjeta "Por la hora" dinámica (hora de `LocalTime.now()`, se calcula al crear la pantalla), Habitaciones, Escenas, Ajustes. "Ahora no" oculta la tarjeta durante la sesión. Se quitaron los botones deshabilitados Favoritos y Voz (tareas posteriores); sus textos siguen en recursos.
+- Accesibilidad: "ESCENA ACTIVA" con `liveRegion` educada; "Deshacer" con descripción propia; botones de 48 dp y NavigationItem de 60 dp.
+- Textos: 23 claves nuevas en ambos idiomas y se eliminó `card_rest` (neto +22: de 52 a 74).
+
+**Verificaciones:**
+- Claves: 74 traducibles en `values/` = 74 en `values-en/` (más 2 `translatable="false"` solo en `values/`). Sin " %%" en `values-en`. `Color(0x` solo en `Color.kt`; sin literales visibles ni estilos sueltos fuera de `theme/`.
+- Pruebas unitarias: **no se agregaron**. El proyecto no tiene JUnit para pruebas locales (no hay `testImplementation` ni `src/test`) y no se permiten dependencias nuevas. `suggestionForHour` y `applyScene` son puras y están listas para probarse.
+
+**Estados:**
+- Implementado: sí.
+- Compilado: sí, `BUILD SUCCESSFUL in 1m 23s` con `.\gradlew.bat :app:assembleDebug --no-daemon --stacktrace`.
+- Preview renderizado: no (no se agregaron previews de las pantallas nuevas).
+- Instalado: no.
+- Probado: no (lo prueba Alejandro).
+
+**Sin verificar:** navegación y Deshacer en el emulador; que el snapshot sobreviva a `recreate()`; lectura de TalkBack de "Escena activa"; el diseño de Figma (no se leyó el archivo).

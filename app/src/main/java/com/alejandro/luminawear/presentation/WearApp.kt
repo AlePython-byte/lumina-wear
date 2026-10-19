@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
@@ -15,13 +16,23 @@ import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import androidx.wear.compose.ui.tooling.preview.WearPreviewDevices
 import androidx.wear.compose.ui.tooling.preview.WearPreviewFontScales
 import com.alejandro.luminawear.R
+import java.time.LocalTime
 import com.alejandro.luminawear.presentation.home.HomeScreen
 import com.alejandro.luminawear.presentation.lights.LightControlScreen
 import com.alejandro.luminawear.presentation.models.appLights
+import com.alejandro.luminawear.presentation.models.Scene
 import com.alejandro.luminawear.presentation.models.appRooms
+import com.alejandro.luminawear.presentation.models.sceneById
+import com.alejandro.luminawear.presentation.models.suggestionForHour
 import com.alejandro.luminawear.presentation.rooms.RoomDetailScreen
 import com.alejandro.luminawear.presentation.rooms.RoomsScreen
+import com.alejandro.luminawear.presentation.scenes.SceneActiveScreen
+import com.alejandro.luminawear.presentation.scenes.SceneDetailScreen
+import com.alejandro.luminawear.presentation.scenes.ScenesScreen
+import com.alejandro.luminawear.presentation.scenes.SuggestionScreen
 import com.alejandro.luminawear.presentation.settings.SettingsScreen
+import com.alejandro.luminawear.presentation.state.parseLightStates
+import com.alejandro.luminawear.presentation.state.serializeLightStates
 import com.alejandro.luminawear.presentation.state.AppLanguage
 import com.alejandro.luminawear.presentation.state.rememberLightStateHolder
 import com.alejandro.luminawear.presentation.state.LightState
@@ -30,7 +41,7 @@ import com.alejandro.luminawear.presentation.theme.LuminaTimeText
 import com.alejandro.luminawear.presentation.theme.LuminaWearTheme
 import com.alejandro.luminawear.presentation.theme.ThemeMode
 
-enum class ScreenType { HOME, ROOMS, ROOM_DETAIL, LIGHT_CONTROL, SETTINGS }
+enum class ScreenType { HOME, ROOMS, ROOM_DETAIL, LIGHT_CONTROL, SETTINGS, SCENES, SCENE_DETAIL, SCENE_ACTIVE, SUGGESTION }
 
 @Composable
 fun WearApp(
@@ -49,6 +60,18 @@ fun WearApp(
     var selectedLightId by rememberSaveable { mutableStateOf("") }
     // Único dueño del tema; MainActivity entrega el valor guardado y persiste los cambios.
     var themeMode by rememberSaveable { mutableStateOf(initialThemeMode) }
+    var selectedSceneId by rememberSaveable { mutableStateOf("") }
+    // Snapshot de las luces justo antes de activar una escena ("" = sin Deshacer). Una sola capa.
+    var undoSnapshot by rememberSaveable { mutableStateOf("") }
+    var suggestionDismissed by rememberSaveable { mutableStateOf(false) }
+    val suggestion = remember { suggestionForHour(LocalTime.now().hour) }
+
+    fun activateScene(scene: Scene) {
+        undoSnapshot = serializeLightStates(lightStateHolder.toMap())
+        lightStateHolder.applyScene(scene)
+        selectedSceneId = scene.id
+        currentScreen = ScreenType.SCENE_ACTIVE.name
+    }
 
     BackHandler(currentScreen != ScreenType.HOME.name) {
         when (currentScreen) {
@@ -60,6 +83,13 @@ fun WearApp(
             ScreenType.ROOM_DETAIL.name -> currentScreen = ScreenType.ROOMS.name
             ScreenType.ROOMS.name -> currentScreen = ScreenType.HOME.name
             ScreenType.SETTINGS.name -> currentScreen = ScreenType.HOME.name
+            ScreenType.SUGGESTION.name -> currentScreen = ScreenType.HOME.name
+            ScreenType.SCENES.name -> currentScreen = ScreenType.HOME.name
+            ScreenType.SCENE_DETAIL.name -> currentScreen = ScreenType.SCENES.name
+            ScreenType.SCENE_ACTIVE.name -> {
+                undoSnapshot = ""
+                currentScreen = ScreenType.SCENES.name
+            }
         }
     }
 
@@ -85,7 +115,76 @@ fun WearApp(
                                 totalLights = totalLights,
                                 onTurnOffAllClick = { lightStateHolder.turnOffAll() },
                                 onRoomsClick = { currentScreen = ScreenType.ROOMS.name },
+                                onScenesClick = { currentScreen = ScreenType.SCENES.name },
                                 onSettingsClick = { currentScreen = ScreenType.SETTINGS.name },
+                                suggestion = if (suggestionDismissed) null else suggestion,
+                                onSuggestionClick = { currentScreen = ScreenType.SUGGESTION.name },
+                                contentPadding = contentPadding,
+                                listState = listState,
+                                transformationSpec = transformationSpec
+                            )
+                        }
+                        ScreenType.SCENES.name -> {
+                            ScenesScreen(
+                                onSceneClick = { sceneId ->
+                                    selectedSceneId = sceneId
+                                    currentScreen = ScreenType.SCENE_DETAIL.name
+                                },
+                                onHomeClick = { currentScreen = ScreenType.HOME.name },
+                                contentPadding = contentPadding,
+                                listState = listState,
+                                transformationSpec = transformationSpec
+                            )
+                        }
+                        ScreenType.SCENE_DETAIL.name -> {
+                            val scene = sceneById(selectedSceneId)
+                            if (scene == null) {
+                                LaunchedEffect(selectedSceneId) { currentScreen = ScreenType.SCENES.name }
+                            } else {
+                                SceneDetailScreen(
+                                    scene = scene,
+                                    onActivateClick = { activateScene(scene) },
+                                    onScenesClick = { currentScreen = ScreenType.SCENES.name },
+                                    contentPadding = contentPadding,
+                                    listState = listState,
+                                    transformationSpec = transformationSpec
+                                )
+                            }
+                        }
+                        ScreenType.SCENE_ACTIVE.name -> {
+                            val scene = sceneById(selectedSceneId)
+                            if (scene == null) {
+                                LaunchedEffect(selectedSceneId) { currentScreen = ScreenType.SCENES.name }
+                            } else {
+                                SceneActiveScreen(
+                                    scene = scene,
+                                    onUndoClick = {
+                                        lightStateHolder.restore(parseLightStates(undoSnapshot))
+                                        undoSnapshot = ""
+                                        currentScreen = ScreenType.SCENE_DETAIL.name
+                                    },
+                                    onHomeClick = {
+                                        undoSnapshot = ""
+                                        currentScreen = ScreenType.HOME.name
+                                    },
+                                    contentPadding = contentPadding,
+                                    listState = listState,
+                                    transformationSpec = transformationSpec
+                                )
+                            }
+                        }
+                        ScreenType.SUGGESTION.name -> {
+                            SuggestionScreen(
+                                scene = suggestion,
+                                onActivateClick = { activateScene(suggestion) },
+                                onViewSceneClick = {
+                                    selectedSceneId = suggestion.id
+                                    currentScreen = ScreenType.SCENE_DETAIL.name
+                                },
+                                onDismissClick = {
+                                    suggestionDismissed = true
+                                    currentScreen = ScreenType.HOME.name
+                                },
                                 contentPadding = contentPadding,
                                 listState = listState,
                                 transformationSpec = transformationSpec
