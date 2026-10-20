@@ -414,3 +414,54 @@
   - Página http://localhost:8787 en Chrome: bombillo gris al apagar, amarillo "75 %" al encender.
 - Sin probar: "Cancelar" durante Conectando, rotación/recreate con el diálogo abierto, modo tuya.
 
+
+
+---
+
+## LW-010a-2 — Escenas y acciones masivas sincronizadas con el hub; "Conectando" sin parpadeo
+
+**Fecha:** 2026-10-19
+
+**Implementado (app):**
+- `WearApp.runHubAction()`: escenas (también desde Sugerencia), "Apagar todo", "Deshacer" y "Restaurar demo" se aplican en local y comparan la Lámpara (`living_lampara`) antes y después. Si cambió, se envía **una** orden con su estado final; si no, no se envía nada. Log `HubSync` en ambos casos.
+- Si la orden falla (o se niega el permiso, o se pulsa Cancelar): se restauran todas las luces con un snapshot en el mismo formato del de Deshacer (`serializeLightStates`; en una escena es idéntico a `undoSnapshot`), se recupera el Deshacer previo y se vuelve a la pantalla de origen. Se muestra el error existente ("NO SE PUDO / Sin cambios").
+- "Reintentar" repite la acción completa (se guarda como `turn_off_all`, `undo`, `restore_demo` o `scene:<id>` en `rememberSaveable`). "Volver" deja al usuario en la pantalla de origen (tras una orden desde el control de la luz sigue yendo al control de la Lámpara).
+- El permiso `ACCESS_LOCAL_NETWORK` se pide con el mismo flujo (`startHubRequest`).
+- CONECTANDO solo se muestra si el hub tarda más de 400 ms (`HUB_CONNECTING_REVEAL_MS`). Mientras no se ve, Atrás navega normal en vez de cancelar.
+- `HubProvider`: `Log.i` con el código HTTP y los ms de cada orden confirmada.
+
+**Implementado (hub):** escucha por defecto en `127.0.0.1` (el emulador llega por `10.0.2.2`). Nueva opción `--host 0.0.0.0` con aviso en consola. `hub/README.md`: sección de `--host`, lista "Antes del demo" y qué envía la app.
+
+**Decisiones:**
+- "Restaurar demo" fallido revierte las luces y el Deshacer, pero no los favoritos ni la sugerencia descartada (no dependen del hub).
+- Si llega una acción masiva con una orden de brillo aún en espera, se conserva como rollback el último estado confirmado de la Lámpara (igual que en el control de la luz).
+- El bombillo Tuya por Wi-Fi no necesita `--host 0.0.0.0`: el hub es quien se conecta al bombillo. Solo un reloj físico lo necesita.
+- Escenas actuales: Relax (sala, 30 %) y Dormir (toda la casa, apagar) cambian la Lámpara; Leer (dormitorio) y Enfoque (estudio) no.
+
+**Verificaciones:** sin textos nuevos (ES = EN sin cambios); `Color(0x` solo en `Color.kt`; Manifest, `res/` y Gradle sin cambios.
+
+**Estados:**
+- Implementado: sí.
+- Compilado: sí, `BUILD SUCCESSFUL in 49s` con `.\gradlew.bat :app:assembleDebug --no-daemon --stacktrace`, sin warnings `w:` de Kotlin.
+- Preview renderizado: no (no hay previews nuevas; las del hub siguen igual).
+- Instalado: sí, en `emulator-5554` (Wear_OS_Small_Round, Android 17). Antes figuraba `unauthorized`; se resolvió reiniciando adb (`adb kill-server`). Permiso `ACCESS_LOCAL_NETWORK` ya concedido.
+- Probado en el emulador. Hub simulado arrancado por Alejandro, escuchando en `127.0.0.1:8787` (`netstat`), el emulador lo alcanza por `10.0.2.2`. Evidencia: logcat (`HubSync`, `HubProvider`) y un monitor que consulta `GET /api/lights/living_lampara` cada 250 ms (la salida de consola del hub no fue accesible). El reloj del emulador va ~2 h 10 min adelantado respecto al PC.
+
+| Prueba | logcat | Hub después |
+|---|---|---|
+| Escena Lectura (no toca la Lámpara) | `scene:read: la Lámpara no cambia (1:45), no se envía` | sin cambio (on, 45) |
+| Deshacer de Lectura | `undo: la Lámpara no cambia (1:45), no se envía` | sin cambio |
+| Escena Descanso | `scene:relax: Lámpara 1:45 → 1:30, se envía` · `HTTP 200 en 101 ms` | on, 30 |
+| Deshacer | `undo: Lámpara 1:30 → 1:45, se envía` · `HTTP 200 en 14 ms` | on, 45 |
+| Apagar todo | `turn_off_all: Lámpara 1:45 → 0:45, se envía` · `HTTP 200 en 12 ms` | off, 45 |
+| Restaurar demo | `restore_demo: Lámpara 0:45 → 1:45, se envía` · `HTTP 200 en 10 ms` | on, 45 |
+| Descanso con el hub apagado | `scene:relax … se envía` · `SocketTimeoutException … after 2000ms` | sin hub |
+| Reintentar (hub apagado) | repite `scene:relax … se envía` · timeout | sin hub |
+| Reintentar (hub encendido) | `scene:relax … se envía` · `HTTP 200 en 31 ms` | on, 30 |
+
+- Cada acción que cambia la Lámpara produjo un solo POST y un solo cambio en el hub.
+- Con respuestas de 10–101 ms no apareció CONECTANDO (se pasó directo a la pantalla siguiente). Con el hub apagado sí apareció ("Buscando tu hogar", Cancelar) durante la espera y, a los 2 s, "NO SE PUDO / Sin cambios".
+- Rollback con el hub apagado: "Volver" dejó al usuario en el detalle de Descanso, y en Sala quedaron Plafón 72 % y Lámpara 45 % (la escena los habría dejado en 30 %).
+- Tras el Reintentar exitoso, "Deshacer" volvió a enviar 45 % (`HTTP 200 en 13 ms`): la app y el hub quedaron en el estado de demo.
+- Sin probar: "Cancelar" durante CONECTANDO en una acción masiva; recrear la Activity a mitad de una orden; `--host 0.0.0.0` (solo `--help`); el umbral exacto de 400 ms (las capturas cuestan ~0,3 s cada una, así que solo se confirma que no aparece con respuestas rápidas y sí con la espera de 2 s); modo tuya.
+- Detalle visto: al volver a "NO SE PUDO" la lista conserva el desplazamiento de la vez anterior (el título puede quedar fuera de pantalla). Ya pasaba antes de esta tarea; no se cambió.

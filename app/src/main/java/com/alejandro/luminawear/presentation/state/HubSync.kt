@@ -19,3 +19,15 @@ fun decodeLightState(saved: String): LightState? {
     val brightness = parts[1].toIntOrNull()?.takeIf { it in 1..100 } ?: return null
     return LightState(isOn = parts[0] == "1", brightness = brightness)
 }
+
+/** Tiempo que debe tardar el hub antes de mostrar CONECTANDO (evita el parpadeo). */
+const val HUB_CONNECTING_REVEAL_MS = 400L
+
+/**
+ * Acciones masivas que pueden cambiar la Lámpara. Se guardan como texto para que "Reintentar"
+ * repita la acción completa ("" = la orden vino del control de la luz).
+ */
+const val HUB_ACTION_TURN_OFF_ALL = "turn_off_all"
+const val HUB_ACTION_UNDO = "undo"
+const val HUB_ACTION_RESTORE_DEMO = "restore_demo"
+const val HUB_ACTION_SCENE_PREFIX = "scene:"

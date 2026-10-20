@@ -24,6 +24,7 @@ object DemoProvider : LightProvider {
 class HubProvider(private val baseUrl: String) : LightProvider {
     override suspend fun setLight(id: String, on: Boolean, brightness: Int): Result<Unit> =
         withContext(Dispatchers.IO) {
+            val startedAt = System.currentTimeMillis()
             try {
                 val url = URL("${baseUrl.trimEnd('/')}/api/lights/${URLEncoder.encode(id, "UTF-8")}")
                 val connection = url.openConnection() as HttpURLConnection
@@ -37,6 +38,7 @@ class HubProvider(private val baseUrl: String) : LightProvider {
                     connection.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
                     val code = connection.responseCode
                     if (code in 200..299) {
+                        Log.i(TAG, "$id on=$on brightness=$brightness → HTTP $code en ${System.currentTimeMillis() - startedAt} ms")
                         Result.success(Unit)
                     } else {
                         Log.w(TAG, "Hub respondió HTTP $code para $id ($url)")

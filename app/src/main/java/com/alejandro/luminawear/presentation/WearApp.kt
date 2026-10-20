@@ -29,6 +29,7 @@ import com.alejandro.luminawear.data.LOCAL_NETWORK_PERMISSION
 import com.alejandro.luminawear.data.LightProviders
 import com.alejandro.luminawear.data.needsLocalNetworkPermission
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.time.LocalTime
 import com.alejandro.luminawear.presentation.favorites.FavoritesEditScreen
 import com.alejandro.luminawear.presentation.favorites.FavoritesScreen
@@ -53,6 +54,11 @@ import com.alejandro.luminawear.presentation.state.serializeLightStates
 import com.alejandro.luminawear.presentation.state.AppLanguage
 import com.alejandro.luminawear.presentation.state.DEFAULT_FAVORITES
 import com.alejandro.luminawear.presentation.state.FAVORITE_PLAFON_ID
+import com.alejandro.luminawear.presentation.state.HUB_ACTION_RESTORE_DEMO
+import com.alejandro.luminawear.presentation.state.HUB_ACTION_SCENE_PREFIX
+import com.alejandro.luminawear.presentation.state.HUB_ACTION_TURN_OFF_ALL
+import com.alejandro.luminawear.presentation.state.HUB_ACTION_UNDO
+import com.alejandro.luminawear.presentation.state.HUB_CONNECTING_REVEAL_MS
 import com.alejandro.luminawear.presentation.state.HUB_DEBOUNCE_MS
 import com.alejandro.luminawear.presentation.state.HubStatus
 import com.alejandro.luminawear.presentation.state.decodeLightState
@@ -68,6 +74,8 @@ import com.alejandro.luminawear.presentation.state.LightStateHolder
 import com.alejandro.luminawear.presentation.theme.LuminaTimeText
 import com.alejandro.luminawear.presentation.theme.LuminaWearTheme
 import com.alejandro.luminawear.presentation.theme.ThemeMode
+
+private const val HUB_SYNC_TAG = "HubSync"
 
 enum class ScreenType { HOME, ROOMS, ROOM_DETAIL, LIGHT_CONTROL, SETTINGS, SCENES, SCENE_DETAIL, SCENE_ACTIVE, SUGGESTION, FAVORITES, FAVORITES_EDIT }
 
@@ -108,10 +116,39 @@ fun WearApp(
     // Orden pendiente y último estado confirmado de la Lámpara, en formato "1:45".
     var hubTarget by rememberSaveable { mutableStateOf("") }
     var hubRollback by rememberSaveable { mutableStateOf("") }
+    // Acción masiva en curso (HUB_ACTION_*; "" = control de la luz) y lo necesario para deshacerla:
+    // snapshot de todas las luces (mismo formato que Deshacer), Deshacer previo y pantalla de origen.
+    var hubAction by rememberSaveable { mutableStateOf("") }
+    var hubActionSnapshot by rememberSaveable { mutableStateOf("") }
+    var hubActionUndo by rememberSaveable { mutableStateOf("") }
+    var hubActionOrigin by rememberSaveable { mutableStateOf("") }
+    // CONECTANDO solo se muestra si el hub tarda más de HUB_CONNECTING_REVEAL_MS.
+    var hubConnectingVisible by remember { mutableStateOf(false) }
     val context = LocalContext.current
+
+    fun updateFavorites(ids: List<String>) {
+        favoritesRaw = serializeFavoriteIds(ids)
+        onFavoritesChange(favoritesRaw)
+    }
+
+    fun removeFavorite(favorite: Favorite) {
+        val remaining = parseFavoriteIds(favoritesRaw) - favorite.id
+        updateFavorites(remaining)
+        if (remaining.isEmpty()) currentScreen = ScreenType.FAVORITES.name
+    }
 
     fun rollbackHubLight() {
         decodeLightState(hubRollback)?.let { lightStateHolder.restore(mapOf(HUB_LIGHT_ID to it)) }
+    }
+
+    /** Orden no confirmada: deshace la acción masiva (si la hubo) y deja la Lámpara en su último estado confirmado. */
+    fun rollbackHubOrder() {
+        if (hubAction.isNotEmpty()) {
+            lightStateHolder.restore(parseLightStates(hubActionSnapshot))
+            undoSnapshot = hubActionUndo
+            currentScreen = hubActionOrigin
+        }
+        rollbackHubLight()
     }
 
     // Permiso de red local (Android 17): se pide antes de la primera orden; si se niega, error y
@@ -124,7 +161,7 @@ fun WearApp(
         if (granted) {
             hubStatus = HubStatus.CONNECTING
         } else {
-            rollbackHubLight()
+            rollbackHubOrder()
             hubStatus = HubStatus.ERROR
         }
     }
@@ -151,31 +188,104 @@ fun WearApp(
         change()
         val after = lightStateHolder.states[lightId]
         if (hubStatus == HubStatus.IDLE && before == after) return
+        hubAction = ""
         hubTarget = encodeLightState(after)
         if (immediate) startHubRequest() else hubStatus = HubStatus.DEBOUNCING
     }
 
-    fun cancelHub() {
-        rollbackHubLight()
-        hubRollback = ""
-        hubStatus = HubStatus.IDLE
-    }
-
-    fun retryHub() {
-        decodeLightState(hubTarget)?.let { lightStateHolder.restore(mapOf(HUB_LIGHT_ID to it)) }
+    /**
+     * Acción masiva (escena, Apagar todo, Deshacer, Restaurar demo): se aplica en local y, si dejó la
+     * Lámpara distinta, envía UNA orden con su estado final. Si no la cambió, no envía nada.
+     */
+    fun runHubAction(action: String, change: () -> Unit) {
+        val before = lightStateHolder.toMap()
+        val undoBefore = undoSnapshot
+        val origin = currentScreen
+        change()
+        val lampBefore = before[HUB_LIGHT_ID]
+        val lampAfter = lightStateHolder.states[HUB_LIGHT_ID]
+        if (lampBefore == lampAfter) {
+            Log.i(HUB_SYNC_TAG, "$action: la Lámpara no cambia (${encodeLightState(lampAfter)}), no se envía")
+            return
+        }
+        Log.i(HUB_SYNC_TAG, "$action: Lámpara ${encodeLightState(lampBefore)} → ${encodeLightState(lampAfter)}, se envía")
+        // Igual que en changeLight: con una orden ya pendiente se conserva el último estado confirmado.
+        if (hubStatus == HubStatus.IDLE) hubRollback = encodeLightState(lampBefore)
+        hubAction = action
+        hubActionSnapshot = serializeLightStates(before)
+        hubActionUndo = undoBefore
+        hubActionOrigin = origin
+        hubTarget = encodeLightState(lampAfter)
         startHubRequest()
     }
 
-    fun backFromHubError() {
+    fun turnOffAll() = runHubAction(HUB_ACTION_TURN_OFF_ALL) { lightStateHolder.turnOffAll() }
+
+    fun restoreDemo() = runHubAction(HUB_ACTION_RESTORE_DEMO) {
+        updateFavorites(parseFavoriteIds(DEFAULT_FAVORITES))
+        lightStateHolder.restore(defaultLightStates())
+        undoSnapshot = ""
+        selectedSceneId = ""
+        suggestionDismissed = false
+        openedFromFavorites = false
+        currentScreen = ScreenType.FAVORITES.name
+    }
+
+    fun activateScene(scene: Scene) = runHubAction(HUB_ACTION_SCENE_PREFIX + scene.id) {
+        undoSnapshot = serializeLightStates(lightStateHolder.toMap())
+        lightStateHolder.applyScene(scene)
+        selectedSceneId = scene.id
+        currentScreen = ScreenType.SCENE_ACTIVE.name
+    }
+
+    fun undoScene() = runHubAction(HUB_ACTION_UNDO) {
+        lightStateHolder.restore(parseLightStates(undoSnapshot))
+        undoSnapshot = ""
+        currentScreen = ScreenType.SCENE_DETAIL.name
+    }
+
+    fun clearHubOrder() {
         hubRollback = ""
+        hubAction = ""
         hubStatus = HubStatus.IDLE
-        selectedLightId = HUB_LIGHT_ID
-        currentScreen = ScreenType.LIGHT_CONTROL.name
+    }
+
+    fun cancelHub() {
+        rollbackHubOrder()
+        clearHubOrder()
+    }
+
+    fun retryHub() {
+        val action = hubAction
+        if (action.isEmpty()) {
+            decodeLightState(hubTarget)?.let { lightStateHolder.restore(mapOf(HUB_LIGHT_ID to it)) }
+            startHubRequest()
+            return
+        }
+        // Las luces ya volvieron al estado previo: se repite la acción completa.
+        clearHubOrder()
+        when {
+            action == HUB_ACTION_TURN_OFF_ALL -> turnOffAll()
+            action == HUB_ACTION_UNDO -> undoScene()
+            action == HUB_ACTION_RESTORE_DEMO -> restoreDemo()
+            action.startsWith(HUB_ACTION_SCENE_PREFIX) ->
+                sceneById(action.removePrefix(HUB_ACTION_SCENE_PREFIX))?.let { activateScene(it) }
+        }
+    }
+
+    fun backFromHubError() {
+        // Tras una acción masiva ya se volvió a la pantalla de origen; si no, al control de la Lámpara.
+        if (hubAction.isEmpty()) {
+            selectedLightId = HUB_LIGHT_ID
+            currentScreen = ScreenType.LIGHT_CONTROL.name
+        }
+        clearHubOrder()
     }
 
     // Vive fuera de las pantallas: un cambio pendiente no se pierde al navegar. Tras recrear en
     // CONNECTING la orden se reenvía (es idempotente: lleva el estado completo).
     LaunchedEffect(hubStatus, hubTarget) {
+        if (hubStatus != HubStatus.CONNECTING) hubConnectingVisible = false
         when (hubStatus) {
             HubStatus.DEBOUNCING -> {
                 delay(HUB_DEBOUNCE_MS)
@@ -187,13 +297,17 @@ fun WearApp(
                     hubStatus = HubStatus.IDLE
                     return@LaunchedEffect
                 }
+                val reveal = launch {
+                    delay(HUB_CONNECTING_REVEAL_MS)
+                    hubConnectingVisible = true
+                }
                 val result = providers.providerFor(HUB_LIGHT_ID)
                     .setLight(HUB_LIGHT_ID, target.isOn, target.brightness)
+                reveal.cancel()
                 if (result.isSuccess) {
-                    hubRollback = ""
-                    hubStatus = HubStatus.IDLE
+                    clearHubOrder()
                 } else {
-                    rollbackHubLight()
+                    rollbackHubOrder()
                     hubStatus = HubStatus.ERROR
                 }
             }
@@ -201,38 +315,10 @@ fun WearApp(
             HubStatus.IDLE, HubStatus.PERMISSION, HubStatus.ERROR -> Unit
         }
     }
-    val hubOverlay = hubStatus == HubStatus.CONNECTING || hubStatus == HubStatus.ERROR
-
-    fun updateFavorites(ids: List<String>) {
-        favoritesRaw = serializeFavoriteIds(ids)
-        onFavoritesChange(favoritesRaw)
-    }
-
-    fun removeFavorite(favorite: Favorite) {
-        val remaining = parseFavoriteIds(favoritesRaw) - favorite.id
-        updateFavorites(remaining)
-        if (remaining.isEmpty()) currentScreen = ScreenType.FAVORITES.name
-    }
-
-    fun restoreDemo() {
-        updateFavorites(parseFavoriteIds(DEFAULT_FAVORITES))
-        lightStateHolder.restore(defaultLightStates())
-        undoSnapshot = ""
-        selectedSceneId = ""
-        suggestionDismissed = false
-        openedFromFavorites = false
-        currentScreen = ScreenType.FAVORITES.name
-    }
-
-    fun activateScene(scene: Scene) {
-        undoSnapshot = serializeLightStates(lightStateHolder.toMap())
-        lightStateHolder.applyScene(scene)
-        selectedSceneId = scene.id
-        currentScreen = ScreenType.SCENE_ACTIVE.name
-    }
+    val hubOverlay = (hubStatus == HubStatus.CONNECTING && hubConnectingVisible) || hubStatus == HubStatus.ERROR
 
     BackHandler(currentScreen != ScreenType.HOME.name || hubOverlay) {
-        if (hubStatus == HubStatus.CONNECTING) {
+        if (hubStatus == HubStatus.CONNECTING && hubConnectingVisible) {
             cancelHub()
             return@BackHandler
         }
@@ -312,7 +398,7 @@ fun WearApp(
                             HomeScreen(
                                 lightsOn = totalLightsOn,
                                 totalLights = totalLights,
-                                onTurnOffAllClick = { lightStateHolder.turnOffAll() },
+                                onTurnOffAllClick = ::turnOffAll,
                                 onRoomsClick = { currentScreen = ScreenType.ROOMS.name },
                                 onScenesClick = { currentScreen = ScreenType.SCENES.name },
                                 onFavoritesClick = { currentScreen = ScreenType.FAVORITES.name },
@@ -404,11 +490,7 @@ fun WearApp(
                             } else {
                                 SceneActiveScreen(
                                     scene = scene,
-                                    onUndoClick = {
-                                        lightStateHolder.restore(parseLightStates(undoSnapshot))
-                                        undoSnapshot = ""
-                                        currentScreen = ScreenType.SCENE_DETAIL.name
-                                    },
+                                    onUndoClick = ::undoScene,
                                     onHomeClick = {
                                         undoSnapshot = ""
                                         openedFromFavorites = false

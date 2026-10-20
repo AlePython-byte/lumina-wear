@@ -6,6 +6,7 @@ Modo "tuya": controla un bombillo real con tinytuya leyendo hub/config.json. SIN
 Uso:
     python hub/hub.py                 # simulado, puerto 8787
     python hub/hub.py --mode tuya     # bombillo Tuya (requiere tinytuya y config.json)
+    python hub/hub.py --host 0.0.0.0  # escucha en la red (reloj físico); por defecto solo 127.0.0.1
 """
 
 import argparse
@@ -17,7 +18,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 PORT = 8787
-HOST = "0.0.0.0"
+# Solo este PC por defecto: el emulador llega por 10.0.2.2, que es el 127.0.0.1 del PC.
+HOST = "127.0.0.1"
 # Única luz conectada: Lámpara de Sala (mismo id que en la app).
 LAMP_ID = "living_lampara"
 CONFIG_PATH = Path(__file__).with_name("config.json")
@@ -196,11 +198,16 @@ def main():
     parser = argparse.ArgumentParser(description="Hub local de LuminaWear")
     parser.add_argument("--mode", choices=["simulated", "tuya"], default="simulated")
     parser.add_argument("--port", type=int, default=PORT)
+    parser.add_argument("--host", default=HOST,
+                        help="dirección de escucha; 0.0.0.0 para un reloj físico en la misma Wi-Fi (sin autenticación)")
     args = parser.parse_args()
 
     backend = TuyaBackend() if args.mode == "tuya" else SimulatedBackend()
-    server = ThreadingHTTPServer((HOST, args.port), make_handler(backend))
-    print(f"LuminaWear hub ({backend.mode}) en http://localhost:{args.port}  (emulador: http://10.0.2.2:{args.port})")
+    server = ThreadingHTTPServer((args.host, args.port), make_handler(backend))
+    print(f"LuminaWear hub ({backend.mode}) escuchando en {args.host}:{args.port}  "
+          f"(PC: http://localhost:{args.port} · emulador: http://10.0.2.2:{args.port})")
+    if args.host != "127.0.0.1":
+        print("Aviso: el hub es accesible desde la red y no tiene autenticación. Úsalo solo en una red de confianza.")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
