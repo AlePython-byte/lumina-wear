@@ -60,3 +60,6 @@ tasks.xml
 
 # Mac OS X
 .DS_Store
+
+# Hub local: credenciales Tuya (nunca en Git)
+hub/config.json

@@ -99,4 +99,13 @@
     <string name="fav_empty_title">One tap away.</string>
     <string name="fav_empty_body">Save a light or scene to find it here.</string>
     <string name="fav_add_plafon">Add ceiling light</string>
+
+    <string name="hub_connecting_header">Connecting</string>
+    <string name="hub_connecting_title">Finding your home</string>
+    <string name="hub_connecting_body">Just a moment…</string>
+    <string name="hub_error_header">Couldn’t connect</string>
+    <string name="hub_error_title">No changes</string>
+    <string name="hub_error_body">The light didn’t respond.</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="btn_retry">Retry</string>
 </resources>

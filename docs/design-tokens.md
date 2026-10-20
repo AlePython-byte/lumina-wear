@@ -70,11 +70,15 @@ Lógica sin UI de escenas: `models/Scenes.kt` (modelo, `suggestionForHour`) y `s
 ## Preferencias
 
 - Dónde: `SharedPreferences` `luminawear_prefs` (clase `AppPreferences` en `state/AppPreferences.kt`), sin dependencias.
-- Qué: `theme_mode` (`light` / `dark`), `language` (`es` / `en`) y `favorites` (ids separados por comas; por defecto `living_plafon,relax`; clave presente y vacía = sin favoritos). Se escriben con `apply()`.
+- Qué: `theme_mode` (`light` / `dark`), `language` (`es` / `en`), `favorites` (ids separados por comas; por defecto `living_plafon,relax`; clave presente y vacía = sin favoritos) y `hub_url` (solo lectura, sin UI; ausente → `http://10.0.2.2:8787`). Se escriben con `apply()`.
 - Por defecto: valor ausente o inválido → tema **LIGHT** e idioma **ES** (aunque el sistema esté en inglés).
 - Lectura: `MainActivity` las lee antes de `setContent`; el idioma se aplica en `attachBaseContext` y cambiarlo llama a `recreate()`.
 
 ## Favoritos
 
 Sin tokens nuevos. `favorites/FavoritesScreens.kt` reutiliza `NavigationItem`, `ActionButton` y `SceneHeader`/`CenteredText` (ahora `internal` en `scenes/SceneScreens.kt`). Lógica en `state/Favorites.kt`.
+
+## Hub (estados Conectando / No se pudo)
+
+Sin tokens nuevos. `lights/HubStatusScreens.kt` reutiliza `SceneHeader`, `CenteredText` y `ActionButton` ("Reintentar" primario = `accent`, lima; "Volver" y "Cancelar" secundarios).
 

@@ -101,4 +101,13 @@
     <string name="fav_empty_title">A un toque.</string>
     <string name="fav_empty_body">Guarda una luz o escena para encontrarla aquí.</string>
     <string name="fav_add_plafon">Añadir plafón</string>
+
+    <string name="hub_connecting_header">Conectando</string>
+    <string name="hub_connecting_title">Buscando tu hogar</string>
+    <string name="hub_connecting_body">Espera un momento…</string>
+    <string name="hub_error_header">No se pudo</string>
+    <string name="hub_error_title">Sin cambios</string>
+    <string name="hub_error_body">La luz no respondió.</string>
+    <string name="btn_cancel">Cancelar</string>
+    <string name="btn_retry">Reintentar</string>
 </resources>

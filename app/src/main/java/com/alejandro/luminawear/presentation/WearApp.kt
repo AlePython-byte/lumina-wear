@@ -1,6 +1,9 @@
 package com.alejandro.luminawear.presentation
 
+import android.util.Log
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -10,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumnState
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
 import androidx.wear.compose.material3.AppScaffold
@@ -19,10 +23,18 @@ import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import androidx.wear.compose.ui.tooling.preview.WearPreviewDevices
 import androidx.wear.compose.ui.tooling.preview.WearPreviewFontScales
 import com.alejandro.luminawear.R
+import com.alejandro.luminawear.data.DEFAULT_HUB_URL
+import com.alejandro.luminawear.data.HUB_LIGHT_ID
+import com.alejandro.luminawear.data.LOCAL_NETWORK_PERMISSION
+import com.alejandro.luminawear.data.LightProviders
+import com.alejandro.luminawear.data.needsLocalNetworkPermission
+import kotlinx.coroutines.delay
 import java.time.LocalTime
 import com.alejandro.luminawear.presentation.favorites.FavoritesEditScreen
 import com.alejandro.luminawear.presentation.favorites.FavoritesScreen
 import com.alejandro.luminawear.presentation.home.HomeScreen
+import com.alejandro.luminawear.presentation.lights.HubConnectingScreen
+import com.alejandro.luminawear.presentation.lights.HubErrorScreen
 import com.alejandro.luminawear.presentation.lights.LightControlScreen
 import com.alejandro.luminawear.presentation.models.appLights
 import com.alejandro.luminawear.presentation.models.Scene
@@ -41,6 +53,10 @@ import com.alejandro.luminawear.presentation.state.serializeLightStates
 import com.alejandro.luminawear.presentation.state.AppLanguage
 import com.alejandro.luminawear.presentation.state.DEFAULT_FAVORITES
 import com.alejandro.luminawear.presentation.state.FAVORITE_PLAFON_ID
+import com.alejandro.luminawear.presentation.state.HUB_DEBOUNCE_MS
+import com.alejandro.luminawear.presentation.state.HubStatus
+import com.alejandro.luminawear.presentation.state.decodeLightState
+import com.alejandro.luminawear.presentation.state.encodeLightState
 import com.alejandro.luminawear.presentation.state.Favorite
 import com.alejandro.luminawear.presentation.state.defaultLightStates
 import com.alejandro.luminawear.presentation.state.parseFavoriteIds
@@ -62,7 +78,8 @@ fun WearApp(
     onThemeModeChange: (ThemeMode) -> Unit = {},
     onLanguageChange: (AppLanguage) -> Unit = {},
     initialFavorites: String = DEFAULT_FAVORITES,
-    onFavoritesChange: (String) -> Unit = {}
+    onFavoritesChange: (String) -> Unit = {},
+    hubUrl: String = DEFAULT_HUB_URL
 ) {
     val lightStateHolder = rememberLightStateHolder()
 
@@ -84,6 +101,107 @@ fun WearApp(
     // true cuando el control de luz o el detalle de escena se abrieron desde Favoritos (atrás vuelve allí).
     var openedFromFavorites by rememberSaveable { mutableStateOf(false) }
     val favorites = resolveFavorites(favoritesRaw)
+
+    // Hub: solo la Lámpara de Sala pide confirmación remota; las demás luces cambian directo.
+    val providers = remember(hubUrl) { LightProviders(hubUrl) }
+    var hubStatus by rememberSaveable { mutableStateOf(HubStatus.IDLE) }
+    // Orden pendiente y último estado confirmado de la Lámpara, en formato "1:45".
+    var hubTarget by rememberSaveable { mutableStateOf("") }
+    var hubRollback by rememberSaveable { mutableStateOf("") }
+    val context = LocalContext.current
+
+    fun rollbackHubLight() {
+        decodeLightState(hubRollback)?.let { lightStateHolder.restore(mapOf(HUB_LIGHT_ID to it)) }
+    }
+
+    // Permiso de red local (Android 17): se pide antes de la primera orden; si se niega, error y
+    // se vuelve a pedir en la siguiente orden o en "Reintentar".
+    val localNetworkPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        Log.i("HubPermission", "ACCESS_LOCAL_NETWORK concedido=$granted")
+        if (hubStatus != HubStatus.PERMISSION) return@rememberLauncherForActivityResult
+        if (granted) {
+            hubStatus = HubStatus.CONNECTING
+        } else {
+            rollbackHubLight()
+            hubStatus = HubStatus.ERROR
+        }
+    }
+
+    /** Envía hubTarget, pidiendo antes el permiso de red local si falta. */
+    fun startHubRequest() {
+        if (needsLocalNetworkPermission(context)) {
+            hubStatus = HubStatus.PERMISSION
+            localNetworkPermissionLauncher.launch(LOCAL_NETWORK_PERMISSION)
+        } else {
+            hubStatus = HubStatus.CONNECTING
+        }
+    }
+
+    /** Aplica el cambio en LightStateHolder y, si la luz es remota, lo encola para el hub. */
+    fun changeLight(lightId: String, immediate: Boolean, change: () -> Unit) {
+        if (!providers.isRemote(lightId)) {
+            change()
+            return
+        }
+        val before = lightStateHolder.states[lightId]
+        // El rollback se toma al empezar una ráfaga: es el último estado confirmado.
+        if (hubStatus == HubStatus.IDLE) hubRollback = encodeLightState(before)
+        change()
+        val after = lightStateHolder.states[lightId]
+        if (hubStatus == HubStatus.IDLE && before == after) return
+        hubTarget = encodeLightState(after)
+        if (immediate) startHubRequest() else hubStatus = HubStatus.DEBOUNCING
+    }
+
+    fun cancelHub() {
+        rollbackHubLight()
+        hubRollback = ""
+        hubStatus = HubStatus.IDLE
+    }
+
+    fun retryHub() {
+        decodeLightState(hubTarget)?.let { lightStateHolder.restore(mapOf(HUB_LIGHT_ID to it)) }
+        startHubRequest()
+    }
+
+    fun backFromHubError() {
+        hubRollback = ""
+        hubStatus = HubStatus.IDLE
+        selectedLightId = HUB_LIGHT_ID
+        currentScreen = ScreenType.LIGHT_CONTROL.name
+    }
+
+    // Vive fuera de las pantallas: un cambio pendiente no se pierde al navegar. Tras recrear en
+    // CONNECTING la orden se reenvía (es idempotente: lleva el estado completo).
+    LaunchedEffect(hubStatus, hubTarget) {
+        when (hubStatus) {
+            HubStatus.DEBOUNCING -> {
+                delay(HUB_DEBOUNCE_MS)
+                startHubRequest()
+            }
+            HubStatus.CONNECTING -> {
+                val target = decodeLightState(hubTarget)
+                if (target == null) {
+                    hubStatus = HubStatus.IDLE
+                    return@LaunchedEffect
+                }
+                val result = providers.providerFor(HUB_LIGHT_ID)
+                    .setLight(HUB_LIGHT_ID, target.isOn, target.brightness)
+                if (result.isSuccess) {
+                    hubRollback = ""
+                    hubStatus = HubStatus.IDLE
+                } else {
+                    rollbackHubLight()
+                    hubStatus = HubStatus.ERROR
+                }
+            }
+            // PERMISSION lo resuelve el callback del diálogo (también tras recrear la Activity).
+            HubStatus.IDLE, HubStatus.PERMISSION, HubStatus.ERROR -> Unit
+        }
+    }
+    val hubOverlay = hubStatus == HubStatus.CONNECTING || hubStatus == HubStatus.ERROR
 
     fun updateFavorites(ids: List<String>) {
         favoritesRaw = serializeFavoriteIds(ids)
@@ -113,7 +231,15 @@ fun WearApp(
         currentScreen = ScreenType.SCENE_ACTIVE.name
     }
 
-    BackHandler(currentScreen != ScreenType.HOME.name) {
+    BackHandler(currentScreen != ScreenType.HOME.name || hubOverlay) {
+        if (hubStatus == HubStatus.CONNECTING) {
+            cancelHub()
+            return@BackHandler
+        }
+        if (hubStatus == HubStatus.ERROR) {
+            backFromHubError()
+            return@BackHandler
+        }
         when (currentScreen) {
             ScreenType.LIGHT_CONTROL.name -> {
                 if (openedFromFavorites) {
@@ -151,10 +277,13 @@ fun WearApp(
     LuminaWearTheme(themeMode = themeMode) {
         AppScaffold(timeText = { LuminaTimeText() }) {
             val stateHolder = rememberSaveableStateHolder()
-            val currentKey = when (currentScreen) {
-                ScreenType.ROOM_DETAIL.name -> "${currentScreen}_$selectedRoomId"
-                ScreenType.LIGHT_CONTROL.name -> "${currentScreen}_$selectedLightId"
-                else -> currentScreen
+            val currentKey = when {
+                hubOverlay -> "HUB_${hubStatus.name}"
+                else -> when (currentScreen) {
+                    ScreenType.ROOM_DETAIL.name -> "${currentScreen}_$selectedRoomId"
+                    ScreenType.LIGHT_CONTROL.name -> "${currentScreen}_$selectedLightId"
+                    else -> currentScreen
+                }
             }
 
             stateHolder.SaveableStateProvider(currentKey) {
@@ -163,7 +292,22 @@ fun WearApp(
                 ScreenScaffold(
                     scrollState = listState,
                 ) { contentPadding ->
-                    when (currentScreen) {
+                    if (hubStatus == HubStatus.CONNECTING) {
+                        HubConnectingScreen(
+                            onCancelClick = ::cancelHub,
+                            contentPadding = contentPadding,
+                            listState = listState,
+                            transformationSpec = transformationSpec
+                        )
+                    } else if (hubStatus == HubStatus.ERROR) {
+                        HubErrorScreen(
+                            onRetryClick = ::retryHub,
+                            onBackClick = ::backFromHubError,
+                            contentPadding = contentPadding,
+                            listState = listState,
+                            transformationSpec = transformationSpec
+                        )
+                    } else when (currentScreen) {
                         ScreenType.HOME.name -> {
                             HomeScreen(
                                 lightsOn = totalLightsOn,
@@ -369,8 +513,16 @@ fun WearApp(
                                     roomNameRes = room?.nameRes ?: R.string.room_living,
                                     isOn = state.isOn,
                                     brightness = state.brightness,
-                                    onBrightnessChange = { newBr -> lightStateHolder.setBrightness(light.id, newBr) },
-                                    onTogglePower = { lightStateHolder.setLightOn(light.id, !state.isOn) },
+                                    onBrightnessChange = { newBr ->
+                                        changeLight(light.id, immediate = false) {
+                                            lightStateHolder.setBrightness(light.id, newBr)
+                                        }
+                                    },
+                                    onTogglePower = {
+                                        changeLight(light.id, immediate = true) {
+                                            lightStateHolder.setLightOn(light.id, !state.isOn)
+                                        }
+                                    },
                                     onBackClick = {
                                         if (openedFromFavorites) {
                                             openedFromFavorites = false
@@ -975,3 +1127,29 @@ fun PreviewFavoritesEmptyLight() = PreviewFavorites(ThemeMode.LIGHT, emptyList()
 @WearPreviewDevices
 @Composable
 fun PreviewFavoritesEmptyDark() = PreviewFavorites(ThemeMode.DARK, emptyList())
+
+// Previews del hub (LW-010a): conectando y error, claro y oscuro.
+
+@WearPreviewDevices
+@Composable
+fun PreviewHubConnectingLight() = FavoritesPreviewHost(ThemeMode.LIGHT) { padding, state, spec ->
+    HubConnectingScreen(onCancelClick = {}, contentPadding = padding, listState = state, transformationSpec = spec)
+}
+
+@WearPreviewDevices
+@Composable
+fun PreviewHubConnectingDark() = FavoritesPreviewHost(ThemeMode.DARK) { padding, state, spec ->
+    HubConnectingScreen(onCancelClick = {}, contentPadding = padding, listState = state, transformationSpec = spec)
+}
+
+@WearPreviewDevices
+@Composable
+fun PreviewHubErrorLight() = FavoritesPreviewHost(ThemeMode.LIGHT) { padding, state, spec ->
+    HubErrorScreen(onRetryClick = {}, onBackClick = {}, contentPadding = padding, listState = state, transformationSpec = spec)
+}
+
+@WearPreviewDevices
+@Composable
+fun PreviewHubErrorDark() = FavoritesPreviewHost(ThemeMode.DARK) { padding, state, spec ->
+    HubErrorScreen(onRetryClick = {}, onBackClick = {}, contentPadding = padding, listState = state, transformationSpec = spec)
+}

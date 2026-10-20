@@ -1,6 +1,7 @@
 package com.alejandro.luminawear.presentation.state
 
 import android.content.Context
+import com.alejandro.luminawear.data.DEFAULT_HUB_URL
 import com.alejandro.luminawear.presentation.theme.ThemeMode
 
 enum class AppLanguage(val tag: String) { ES("es"), EN("en") }
@@ -28,8 +29,13 @@ class AppPreferences(context: Context) {
             prefs.edit().putString(KEY_FAVORITES, value).apply()
         }
 
+    /** URL del hub local. Sin UI por ahora; ausente → emulador (10.0.2.2:8787). */
+    val hubUrl: String
+        get() = prefs.getString(KEY_HUB_URL, null) ?: DEFAULT_HUB_URL
+
     private companion object {
         const val FILE_NAME = "luminawear_prefs"
+        const val KEY_HUB_URL = "hub_url"
         const val KEY_FAVORITES = "favorites"
         const val KEY_THEME_MODE = "theme_mode"
         const val KEY_LANGUAGE = "language"

@@ -24,12 +24,14 @@ class MainActivity : ComponentActivity() {
         val initialThemeMode = prefs.themeMode
         val language = prefs.language
         val initialFavorites = prefs.favorites
+        val hubUrl = prefs.hubUrl
         setContent {
             WearApp(
                 initialThemeMode = initialThemeMode,
                 language = language,
                 initialFavorites = initialFavorites,
                 onFavoritesChange = { prefs.favorites = it },
+                hubUrl = hubUrl,
                 onThemeModeChange = { prefs.themeMode = it },
                 onLanguageChange = {
                     prefs.language = it

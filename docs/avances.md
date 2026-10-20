@@ -347,3 +347,70 @@
 
 **Sin verificar:** posición exacta de botones frente a Figma; persistencia tras cerrar/rotar; flujo quitar/añadir/restaurar; contraste en claro/oscuro; TalkBack.
 
+
+---
+
+## TAREA LW-010a — Hub de luz + conexión de la Lámpara de Sala
+
+**Fecha:** 2026-10-19
+
+**Implementado (app):**
+- `data/LightProvider.kt`: interfaz `LightProvider`, `DemoProvider` (éxito sin hacer nada) y `HubProvider` (`HttpURLConnection` en `Dispatchers.IO`, timeouts de 2 s, `org.json`, sin librerías). `LightProviders`: `living_lampara` → hub; las otras 7 → demo.
+- `AppPreferences.hubUrl` (clave `hub_url`, sin UI; por defecto `http://10.0.2.2:8787`).
+- `state/HubSync.kt`: `HubStatus` (IDLE, DEBOUNCING, CONNECTING, ERROR) y formato `"1:45"` para orden y rollback.
+- `WearApp`: `LightStateHolder` sigue siendo la fuente de verdad. Encender/apagar la Lámpara envía de inmediato; los botones −/+ esperan 300 ms de inactividad. Al empezar una ráfaga se guarda el último estado confirmado; si falla, la luz vuelve a él. El efecto vive fuera de las pantallas y el estado es `rememberSaveable` (tras recrear en CONECTANDO se reenvía la orden).
+- `lights/HubStatusScreens.kt`: CONECTANDO ("Buscando tu hogar", "Espera un momento…", Cancelar) y NO SE PUDO ("Sin cambios", "La luz no respondió.", Reintentar primario, Volver). Cabeceras con `liveRegion` educada. Atrás = Cancelar / Volver.
+- Manifest: solo `INTERNET` y `networkSecurityConfig`. `res/xml/network_security_config.xml`: cleartext prohibido salvo `10.0.2.2`.
+- 8 textos nuevos en ES y EN. 4 previews (conectando y error, claro y oscuro).
+
+**Implementado (hub):** `hub/hub.py` (Python 3, estándar, `0.0.0.0:8787`), `/health`, GET/POST `/api/lights/living_lampara`, 404 para otros ids, 400 para JSON inválido o fuera de rango, página `/` con bombillo que consulta cada segundo. Modo `tuya` con `tinytuya` (import perezoso) y `hub/config.json` → **SIN PROBAR**. `config.example.json`, `README.md`, `hub/config.json` en `.gitignore`.
+
+**Decisiones:**
+- Figma no se leyó (MCP sin autenticar): textos de la tarea. "..." se escribió como "…" (evita el aviso de lint). EN: "Connecting", "Finding your home", "Couldn’t connect", "No changes".
+- Las pantallas de estado del hub se muestran por encima de la pantalla actual (no son `ScreenType`), así un cambio pendiente al salir del control no se pierde. "Volver" lleva al control de la Lámpara.
+- "Cancelar" restaura el estado anterior e ignora la respuesta, pero si el POST ya llegó al hub, el hub sí cambia (`HttpURLConnection` no se puede abortar a mitad). Con un hub local la ventana es de milisegundos.
+- Con un hub local la respuesta llega muy rápido: CONECTANDO puede verse como un parpadeo. Se dejó según la tarea; revisar en el emulador.
+- Escenas, "Apagar todo", Deshacer y "Restaurar demo" cambian la Lámpara solo en local (no llaman al hub), así que la app y el bombillo pueden quedar distintos hasta la próxima orden manual.
+- Un reloj real necesitará la IP del PC y otra regla en `network_security_config`; queda fuera de esta tarea (no se suben IPs privadas).
+
+**Verificaciones:**
+- Hub en modo simulado con `curl.exe`: `/health` 200 `simulated`; GET 200 (on, 45); POST válido 200 y GET posterior refleja el cambio; brillo 101, `on` no booleano, brillo booleano, JSON roto y POST sin cuerpo → 400; POST/GET a otro id y ruta desconocida → 404; `GET /` 200 con la página.
+- Claves ES = EN (salvo las 2 `translatable="false"`). `Color(0x` solo en `Color.kt`. Sin IPs privadas en Git. Manifest: solo los 2 cambios autorizados.
+
+**Estados:**
+- Implementado: sí.
+- Compilado: sí, `BUILD SUCCESSFUL in 1m 8s` con `.\gradlew.bat :app:assembleDebug --no-daemon --stacktrace`, sin warnings `w:` de Kotlin.
+- Preview renderizado: no (solo compiladas).
+- Instalado: no (no había emulador: `adb devices` vacío).
+- Probado: solo el hub simulado con curl. La app no se probó: ni la conexión al hub desde el emulador, ni el error con el hub apagado, ni Reintentar, ni la página del bombillo en el navegador. Modo tuya sin probar.
+
+
+---
+
+## LW-010a-fix — Permiso de red local (Android 17)
+
+**Fecha:** 2026-10-19
+
+**Causa raíz:** el emulador es Android 17 (API 37) y la app tiene `targetSdk 37`. El firewall eBPF bloquea la red local (`LocalNetAccessKey{… remoteAddress=10.0.2.0/120}: false`) a los UID sin `PERMISSION_ACCESS_LOCAL_NETWORK`. La app lo tenía solo con INTERNET → `SocketTimeoutException: failed to connect to /10.0.2.2 (port 8787) … after 2000ms`. Desde `adb shell` (UID con el permiso) el mismo `nc` respondía 200; con `run-as` de la app, timeout. `adb reverse` a `127.0.0.1` tampoco servía.
+
+**Cambios:**
+- Manifest: `ACCESS_LOCAL_NETWORK` (autorizado por Alejandro). Total en el Manifest: INTERNET, `networkSecurityConfig` y `ACCESS_LOCAL_NETWORK`.
+- `data/LocalNetworkPermission.kt`: `needsLocalNetworkPermission()` (solo API ≥ 37).
+- `WearApp`: `rememberLauncherForActivityResult(RequestPermission)`. Nuevo `HubStatus.PERMISSION`: antes de enviar (toque, fin del debounce o Reintentar) se pide el permiso si falta. Negado → rollback y estado de error; se vuelve a pedir en la siguiente orden o en Reintentar. Log `HubPermission`.
+- `HubProvider`: `Log.w` con la excepción y con códigos HTTP no 2xx.
+- Sin textos nuevos (el diálogo es del sistema). `hub/README.md`: sección "Antes del demo".
+
+**Importante para el demo:** conceder "Dispositivos cercanos" la primera vez. Tras dos negativas Android no vuelve a mostrar el diálogo: activarlo en Ajustes o con `adb shell pm grant com.alejandro.luminawear android.permission.ACCESS_LOCAL_NETWORK`.
+
+**Estados:**
+- Compilado: sí (`assembleDebug` OK).
+- Instalado: sí, en `emulator-5554` (Wear_OS_Small_Round, Android 17).
+- Probado en el emulador (con logcat y log del hub):
+  - Permiso negado: diálogo → "Don’t allow" → `HubPermission: ACCESS_LOCAL_NETWORK concedido=false`, pantalla "NO SE PUDO", hub sin cambios, tras Volver la Lámpara sigue encendida al 45%.
+  - Se vuelve a pedir y se concede: `concedido=true`, el hub pasa a `on:false`.
+  - Encender sin diálogo: 1 POST, hub `on:true`. Tres toques rápidos de + → 1 solo POST, brillo 75.
+  - Hub apagado: `W HubProvider: java.net.SocketTimeoutException: failed to connect to /10.0.2.2 (port 8787) …` y pantalla "NO SE PUDO". Hub encendido otra vez + Reintentar → POST 200, hub `on:false, brightness:75`.
+  - Plafón: encender/apagar sin diálogo y 0 POST al hub.
+  - Página http://localhost:8787 en Chrome: bombillo gris al apagar, amarillo "75 %" al encender.
+- Sin probar: "Cancelar" durante Conectando, rotación/recreate con el diálogo abierto, modo tuya.
+
