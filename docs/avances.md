@@ -465,3 +465,98 @@
 - Tras el Reintentar exitoso, "Deshacer" volvió a enviar 45 % (`HTTP 200 en 13 ms`): la app y el hub quedaron en el estado de demo.
 - Sin probar: "Cancelar" durante CONECTANDO en una acción masiva; recrear la Activity a mitad de una orden; `--host 0.0.0.0` (solo `--help`); el umbral exacto de 400 ms (las capturas cuestan ~0,3 s cada una, así que solo se confirma que no aparece con respuestas rápidas y sí con la espera de 2 s); modo tuya.
 - Detalle visto: al volver a "NO SE PUDO" la lista conserva el desplazamiento de la vez anterior (el título puede quedar fuera de pantalla). Ya pasaba antes de esta tarea; no se cambió.
+
+
+
+---
+
+## LW-010c — Modo cozylife: el hub controla el bombillo real
+
+**Fecha:** 2026-10-25
+
+**Implementado (hub, commit `f818e4c`):**
+- `hub/cozylife.py`: cliente propio del protocolo local de CozyLife (TCP 5555, JSON por línea), solo librería estándar. Lee la IP de `hub/config.json` → `cozylife` (ignorado por Git).
+- `hub/hub.py --mode cozylife`: GET consulta el estado real del bombillo; POST envía la orden. Si el bombillo no responde, 502.
+- `hub/tools/cozylife_probe.py`: prueba directa del bombillo sin el hub (`estado`, `--on`, `--off`, `--brightness N`). Si falla, indica la fase: conexión y consulta inicial, envío de la orden o lectura posterior del estado.
+- Plazo por petición del cliente: de 2 s a 5 s (`TIMEOUT_S = 5.0`), porque el bombillo llega a tardar ~750 ms en el ping.
+
+**Cómo se encontró el bombillo:** la primera IP candidata no respondió en el puerto 5555 (timeout). Alejandro identificó la correcta por la MAC (coincide con el ID del dispositivo en la app CozyLife). El `did` que reporta el bombillo termina en esa MAC. No se escaneó la red ni se contactó otra IP.
+
+**Probado con el bombillo real (probe, un paso a la vez, Alejandro mirando el bombillo):**
+
+| Paso | Bombillo reporta | Alejandro ve |
+|---|---|---|
+| estado | encendido, 100 % | encendido al máximo |
+| `--off` | apagado (brillo guardado 100 %) | se apagó |
+| `--on` | encendido, 100 % | encendió al máximo |
+| `--brightness 20` (plazo de 2 s) | timeout tras la consulta inicial | — |
+| `--brightness 20` (plazo de 5 s) | ya estaba en 20 % antes de enviar · confirmada · 20 % | al 20 % |
+| `--brightness 100` | confirmada · 100 % | subió al máximo |
+
+- El primer `--brightness 20` sí se aplicó: el timeout fue al esperar la confirmación o la lectura posterior. Este caso motivó LW-010d.
+
+---
+
+## LW-010d — Robustez del modo cozylife y prueba con la app
+
+**Fecha:** 2026-10-25
+
+**Implementado (hub):**
+- **Órdenes que llegan sin confirmación.** La Wi-Fi del bombillo tiene cortes de varios segundos y a veces aplica la orden sin que llegue la confirmación. Un POST tiene un tope total de 8 s (`ORDER_DEADLINE_S`):
+  1. Envío (espera de confirmación 3,5 s). Si confirma, lee el estado para verificar; si esa lectura falla, responde 200 con el estado pedido y aviso en consola.
+  2. Sin confirmación: **no reenvía enseguida**. Lee el estado hasta 2 veces (2 s cada una). Si ya está lo pedido → 200.
+  3. Si responde con otra cosa → reenvía **una sola vez** (valores absolutos, idempotente) y vuelve a verificar.
+  4. Si no responde, o sigue distinto → 502.
+  - Consola: `orden confirmada`, `orden verificada sin confirmación`, `orden reenviada (confirmada | verificada sin confirmación)`, `orden fallida (motivo)`.
+- **Keepalive.** Un hilo de fondo consulta el estado cada 8 s (`KEEPALIVE_S`, lectura de 2,5 s como máximo) sin enviar órdenes, y guarda el último estado conocido con su hora. Tras 2 fallos seguidos marca "no responde"; cuando el bombillo vuelve, se recupera solo.
+- `GET /api/status` (nuevo): último estado conocido, sin contactar al bombillo. La página lo consulta cada segundo y muestra "Última respuesta hace N s" y "El bombillo no responde". `GET /api/lights/living_lampara` sigue consultando al bombillo directamente (502 si falla).
+- En consola solo se registran los cambios de estado, la pérdida o recuperación de la conexión, el resultado de cada orden y las peticiones de la app (no las de la página).
+- Ctrl+C cierra el servidor, detiene el keepalive y cierra la conexión con el bombillo.
+- `hub/cozylife.py`: cada petición acepta su propio plazo, y la espera mientras termina otra petición (por ejemplo un keepalive) cuenta dentro de ese plazo. Así una orden no puede pasar de 8 s.
+
+**Implementado (app):** `HubProvider.TIMEOUT_MS` sube de 2 000 a 10 000 ms (más que los 8 s del hub). Sin cambios en "Conectando" (`HUB_CONNECTING_REVEAL_MS = 400`) ni en "Cancelar". Sin textos nuevos, sin cambios en Manifest, `res/` ni Gradle.
+
+**Decisiones:**
+- Primero se subió la app a 6 s. Durante las pruebas apareció una orden aplicada sin confirmación (502 con el bombillo ya en 20 %). Por eso se agregó la verificación con reenvío único, el hub pasó a 8 s y la app a 10 s.
+- La página ya no consulta al bombillo cada segundo: lee el estado que guarda el keepalive.
+
+**Estados:**
+- Implementado: sí.
+- Compilado: sí, `BUILD SUCCESSFUL in 28s` con `.\gradlew.bat :app:assembleDebug --no-daemon --stacktrace`, sin warnings `w:` de Kotlin.
+- Instalado: sí, en `emulator-5554` (`adb install -r` → `Success`; `ACCESS_LOCAL_NETWORK` ya concedido).
+- Probado: ver abajo.
+
+**Pruebas sin red (bombillo falso, script fuera del repo):** 7 casos del flujo de orden, todos con el resultado esperado: confirmada; confirmada con verificación fallida; sin confirmación pero aplicada; no aplicada + reenvío confirmado; no aplicada + reenvío aplicado sin confirmar; sin respuesta → 502 (1 envío); sigue distinto tras reenviar → 502 (2 envíos). Con esperas reales, el peor caso tarda 8,0 s.
+
+**a) Hub + `curl.exe` con el bombillo real (Alejandro confirma cada paso):**
+
+| Paso | Respuesta | Consola del hub | Bombillo |
+|---|---|---|---|
+| GET | 200 · on, 100 · 0,25 s | — | encendido al máximo |
+| POST encendido 100 | 200 · 0,40 s | — (sin cambio) | sigue al máximo |
+| POST apagado | 200 · 0,36 s | `bombillo: apagada` | se apagó |
+| POST brillo 20 (código anterior) | 502 · 5,2 s | luego el keepalive: `encendida 20 %` | al 20 % (aplicada sin confirmación) |
+| POST brillo 100 (código nuevo) | 200 · 3,03 s | `orden confirmada: encendida 100 %` | subió al máximo |
+| POST brillo 0 | 200 · `brightness: 1` · 1,21 s | `orden confirmada: encendida 1 %` | encendido muy tenue |
+
+**b) Bombillo sin corriente:**
+- GET → 502 en 5,25 s. POST → 502 en 8,22 s (`sin confirmación y el bombillo no responde`, 1 solo envío). Consola: `se perdió la conexión` y `orden fallida`.
+- `/api/status` → `responding: false`. Alejandro confirma que la página decía "El bombillo no responde".
+- Al volver la corriente: ping en segundos, y `bombillo: conexión recuperada` ~1 min después, sin reiniciar el hub. El bombillo volvió con su último estado (1 %, tenue), y GET → 200.
+
+**c) App en el emulador → bombillo real.** Alejandro usó "Apagar todo", encendió la Lámpara y ajustó el brillo varias veces; el bombillo siguió cada cambio. Logcat: 11 órdenes `HubProvider … HTTP 200`, de 138 a 3 160 ms. Consola del hub: las 11 `orden confirmada` (ninguna necesitó verificación ni reenvío).
+
+**Cierre:** `hub.py --mode cozylife` en su propio grupo de procesos; CTRL_BREAK convertido en `KeyboardInterrupt` (el mismo camino que Ctrl+C) → `Cerrando el hub…`, código 0 en 0,56 s, con el keepalive activo.
+
+**Incidencias durante las pruebas:**
+- Al conectar el PC por cable, quedó en otra red (luego en el punto de acceso del celular) y el bombillo dejó de ser alcanzable. Al volver a la Wi-Fi de la casa, el bombillo respondía al ping pero rechazaba el puerto 5555. Se resolvió cortándole la corriente. Quedó en el README ("Si el bombillo no responde").
+- Con el PC en la red correcta, el keepalive registró 3 pérdidas de ~10 s en 6 min, recuperadas solas: la Wi-Fi del bombillo es inestable.
+
+**Sin probar:**
+- Ctrl+C real en una terminal (se probó con CTRL_BREAK convertido en `KeyboardInterrupt`).
+- "Cancelar" durante "Conectando" con el bombillo real.
+- Los casos "verificada sin confirmación" y "reenviada" con el bombillo real: no ocurrieron con el código nuevo; solo están probados con el bombillo falso.
+- Que "Conectando" se viera en las órdenes de 1,5–3 s (no se registró en pantalla).
+- Modo tuya.
+
+**Observación:** al final del ajuste de brillo, la app envió dos órdenes seguidas con el mismo valor (65 %), y la segunda salió antes de que respondiera la primera. Ambas dieron 200 y no causaron problema, pero sobra una. No se investigó en esta tarea.

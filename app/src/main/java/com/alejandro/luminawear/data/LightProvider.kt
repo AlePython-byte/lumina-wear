@@ -58,7 +58,9 @@ class HubProvider(private val baseUrl: String) : LightProvider {
 
     private companion object {
         const val TAG = "HubProvider"
-        const val TIMEOUT_MS = 2_000
+        // Mayor que el plazo de una orden en el hub con el bombillo real (ORDER_DEADLINE_S = 8 s),
+        // para que la app no corte antes.
+        const val TIMEOUT_MS = 10_000
     }
 }
 

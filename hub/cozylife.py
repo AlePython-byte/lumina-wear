@@ -120,9 +120,13 @@ class CozyLifeClient:
                     raise CozyLifeError(f"el bombillo rechazó la orden (res={reply.get('res')})")
                 return reply.get("msg") or {}
 
-    def request(self, cmd, msg):
-        with self._lock:
-            deadline = time.monotonic() + self.timeout
+    def request(self, cmd, msg, timeout=None):
+        """`timeout` (por defecto self.timeout) incluye la espera a que termine otra petición."""
+        deadline = time.monotonic() + (self.timeout if timeout is None else timeout)
+        remaining = deadline - time.monotonic()
+        if remaining <= 0 or not self._lock.acquire(timeout=remaining):
+            raise CozyLifeError(f"sin respuesta de {self.ip}:{self.port}: sin tiempo (otra petición en curso)")
+        try:
             while True:
                 reused = self._sock is not None
                 try:
@@ -134,26 +138,28 @@ class CozyLifeClient:
                     # Solo se reintenta si falló una conexión vieja y queda plazo.
                     if not reused or time.monotonic() >= deadline:
                         raise CozyLifeError(f"sin respuesta de {self.ip}:{self.port}: {e}") from e
+        finally:
+            self._lock.release()
 
-    def info(self):
-        return self.request(CMD_INFO, {})
+    def info(self, timeout=None):
+        return self.request(CMD_INFO, {}, timeout)
 
-    def query(self):
-        data = self.request(CMD_QUERY, {"attr": [0]}).get("data")
+    def query(self, timeout=None):
+        data = self.request(CMD_QUERY, {"attr": [0]}, timeout).get("data")
         if not isinstance(data, dict):
             raise CozyLifeError("respuesta de estado sin 'data'")
         return data
 
-    def set(self, data):
-        self.request(CMD_SET, {"attr": [int(k) for k in data], "data": data})
+    def set(self, data, timeout=None):
+        self.request(CMD_SET, {"attr": [int(k) for k in data], "data": data}, timeout)
 
-    def read_state(self):
+    def read_state(self, timeout=None):
         """(encendido, brillo 0-100) según el bombillo."""
-        data = self.query()
+        data = self.query(timeout)
         return int(data.get(SWITCH, 0)) > 0, to_percent(int(data.get(BRIGHT, 0)))
 
-    def apply(self, on, brightness):
+    def apply(self, on, brightness, timeout=None):
         if on:
-            self.set({SWITCH: 255, WORK_MODE: 0, BRIGHT: to_raw(brightness)})
+            self.set({SWITCH: 255, WORK_MODE: 0, BRIGHT: to_raw(brightness)}, timeout)
         else:
-            self.set({SWITCH: 0})
+            self.set({SWITCH: 0}, timeout)
