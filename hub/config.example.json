@@ -2,5 +2,9 @@
   "device_id": "TU_DEVICE_ID",
   "ip": "IP_LOCAL_DEL_BOMBILLO",
   "local_key": "TU_LOCAL_KEY",
-  "version": 3.3
+  "version": 3.3,
+  "cozylife": {
+    "ip": "IP_LOCAL_DEL_BOMBILLO",
+    "port": 5555
+  }
 }

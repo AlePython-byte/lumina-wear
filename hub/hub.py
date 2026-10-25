@@ -1,10 +1,13 @@
 """Hub local de LuminaWear.
 
 Modo "simulated" (por defecto): solo librería estándar, guarda el estado en memoria.
+Modo "cozylife": controla el bombillo CozyLife real por la red local (librería estándar,
+IP en hub/config.json). GET lee el estado real del bombillo.
 Modo "tuya": controla un bombillo real con tinytuya leyendo hub/config.json. SIN PROBAR.
 
 Uso:
     python hub/hub.py                 # simulado, puerto 8787
+    python hub/hub.py --mode cozylife # bombillo CozyLife (requiere config.json)
     python hub/hub.py --mode tuya     # bombillo Tuya (requiere tinytuya y config.json)
     python hub/hub.py --host 0.0.0.0  # escucha en la red (reloj físico); por defecto solo 127.0.0.1
 """
@@ -35,9 +38,34 @@ class SimulatedBackend:
         self.on = True
         self.brightness = 45
 
+    def read(self):
+        return self.on, self.brightness
+
     def apply(self, on, brightness):
         self.on = on
         self.brightness = brightness
+
+
+class CozyLifeBackend:
+    """Bombillo CozyLife en la red local (ver hub/cozylife.py).
+
+    GET consulta el bombillo cada vez; si no responde en 2 s (con un reintento tras
+    reconectar), el hub responde 502.
+    """
+
+    mode = "cozylife"
+
+    def __init__(self):
+        from cozylife import CozyLifeClient, load_config
+
+        ip, port = load_config()
+        self.client = CozyLifeClient(ip, port)
+
+    def read(self):
+        return self.client.read_state()
+
+    def apply(self, on, brightness):
+        self.client.apply(on, brightness)
 
 
 class TuyaBackend(SimulatedBackend):
@@ -100,7 +128,9 @@ const label = document.getElementById("state");
 const error = document.getElementById("error");
 async function refresh() {
   try {
-    const light = await (await fetch("/api/lights/LAMP_ID")).json();
+    const res = await fetch("/api/lights/LAMP_ID");
+    if (res.status === 502) { error.textContent = "El bombillo no responde"; return; }
+    const light = await res.json();
     if (light.on) {
       const level = 0.25 + 0.75 * (light.brightness / 100);
       bulb.style.backgroundColor = "#ffd84d";
@@ -144,7 +174,16 @@ def make_handler(backend):
             self.wfile.write(body)
 
         def _state(self):
-            return {"id": LAMP_ID, "on": backend.on, "brightness": backend.brightness}
+            on, brightness = backend.read()
+            return {"id": LAMP_ID, "on": on, "brightness": brightness}
+
+        def _send_state(self):
+            try:
+                state = self._state()
+            except Exception as e:  # el bombillo no respondió: la app muestra el error
+                self._send(502, {"error": "device_error", "detail": str(e)})
+                return
+            self._send(200, state)
 
         def _light_id(self):
             match = LIGHT_PATH.match(self.path.split("?", 1)[0])
@@ -158,7 +197,7 @@ def make_handler(backend):
                 self._send(200, {"ok": True, "mode": backend.mode})
             elif self._light_id() == LAMP_ID:
                 with lock:
-                    self._send(200, self._state())
+                    self._send_state()
             else:
                 self._send(404, {"error": "not_found"})
 
@@ -186,7 +225,7 @@ def make_handler(backend):
                 except Exception as e:  # el bombillo no respondió: la app muestra el error
                     self._send(502, {"error": "device_error", "detail": str(e)})
                     return
-                self._send(200, self._state())
+                self._send_state()
 
         def log_message(self, fmt, *args):
             sys.stderr.write("[hub] %s - %s\n" % (self.address_string(), fmt % args))
@@ -196,13 +235,17 @@ def make_handler(backend):
 
 def main():
     parser = argparse.ArgumentParser(description="Hub local de LuminaWear")
-    parser.add_argument("--mode", choices=["simulated", "tuya"], default="simulated")
+    parser.add_argument("--mode", choices=["simulated", "cozylife", "tuya"], default="simulated")
     parser.add_argument("--port", type=int, default=PORT)
     parser.add_argument("--host", default=HOST,
                         help="dirección de escucha; 0.0.0.0 para un reloj físico en la misma Wi-Fi (sin autenticación)")
     args = parser.parse_args()
 
-    backend = TuyaBackend() if args.mode == "tuya" else SimulatedBackend()
+    backends = {"simulated": SimulatedBackend, "cozylife": CozyLifeBackend, "tuya": TuyaBackend}
+    try:
+        backend = backends[args.mode]()
+    except Exception as e:
+        sys.exit(f"No se pudo iniciar el modo {args.mode}: {e}")
     server = ThreadingHTTPServer((args.host, args.port), make_handler(backend))
     print(f"LuminaWear hub ({backend.mode}) escuchando en {args.host}:{args.port}  "
           f"(PC: http://localhost:{args.port} · emulador: http://10.0.2.2:{args.port})")
