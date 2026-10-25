@@ -63,3 +63,6 @@ tasks.xml
 
 # Hub local: credenciales Tuya (nunca en Git)
 hub/config.json
+
+__pycache__/
+*.pyc
