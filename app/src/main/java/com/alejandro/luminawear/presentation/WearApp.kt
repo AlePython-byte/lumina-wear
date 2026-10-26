@@ -98,6 +98,12 @@ import com.alejandro.luminawear.presentation.theme.ThemeMode
 private const val HUB_SYNC_TAG = "HubSync"
 private const val ASSISTANT_TAG = "Assistant"
 
+/** Pantallas de resultado de un flujo: no se vuelven a abrir donde se dejaron, siempre empiezan arriba. */
+private val START_AT_TOP_SCREENS = setOf(
+    ScreenType.ASSISTANT_CONFIRM.name,
+    ScreenType.ASSISTANT_DONE.name
+)
+
 enum class ScreenType {
     HOME, ROOMS, ROOM_DETAIL, LIGHT_CONTROL, SETTINGS, SCENES, SCENE_DETAIL, SCENE_ACTIVE, SUGGESTION, FAVORITES, FAVORITES_EDIT,
     ASSISTANT, ASSISTANT_INPUT, ASSISTANT_LOADING, ASSISTANT_CONFIRM, ASSISTANT_DONE, ASSISTANT_ERROR
@@ -499,6 +505,11 @@ fun WearApp(
 
             stateHolder.SaveableStateProvider(currentKey) {
                 val listState = rememberTransformingLazyColumnState()
+                // Pantallas de un solo paso: cada visita empieza arriba. Si recuerdan el desplazamiento
+                // de la visita anterior, el encabezado queda pegado a la hora del reloj.
+                if (currentScreen in START_AT_TOP_SCREENS) {
+                    LaunchedEffect(currentKey) { listState.scrollToItem(0) }
+                }
                 val transformationSpec = rememberTransformationSpec()
                 ScreenScaffold(
                     scrollState = listState,
