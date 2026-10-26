@@ -98,10 +98,20 @@ import com.alejandro.luminawear.presentation.theme.ThemeMode
 private const val HUB_SYNC_TAG = "HubSync"
 private const val ASSISTANT_TAG = "Assistant"
 
-/** Pantallas de resultado de un flujo: no se vuelven a abrir donde se dejaron, siempre empiezan arriba. */
-private val START_AT_TOP_SCREENS = setOf(
+/** Clave de estado de la lista de las pantallas Conectando / No se pudo del hub. */
+private fun hubStatusKey(status: HubStatus) = "HUB_${status.name}"
+
+/**
+ * Claves de las pantallas de un solo paso (resultado y estado): no se vuelven a abrir donde se
+ * dejaron, siempre empiezan arriba.
+ */
+private val START_AT_TOP_KEYS = setOf(
+    ScreenType.ASSISTANT_LOADING.name,
     ScreenType.ASSISTANT_CONFIRM.name,
-    ScreenType.ASSISTANT_DONE.name
+    ScreenType.ASSISTANT_DONE.name,
+    ScreenType.ASSISTANT_ERROR.name,
+    hubStatusKey(HubStatus.CONNECTING),
+    hubStatusKey(HubStatus.ERROR)
 )
 
 enum class ScreenType {
@@ -495,7 +505,9 @@ fun WearApp(
         AppScaffold(timeText = { LuminaTimeText() }) {
             val stateHolder = rememberSaveableStateHolder()
             val currentKey = when {
-                hubOverlay -> "HUB_${hubStatus.name}"
+                // Conectando se dibuja en cuanto empieza la orden (antes de revelarse): con su propia clave
+                // y no la de la pantalla anterior, de la que heredaría el desplazamiento.
+                hubStatus == HubStatus.CONNECTING || hubStatus == HubStatus.ERROR -> hubStatusKey(hubStatus)
                 else -> when (currentScreen) {
                     ScreenType.ROOM_DETAIL.name -> "${currentScreen}_$selectedRoomId"
                     ScreenType.LIGHT_CONTROL.name -> "${currentScreen}_$selectedLightId"
@@ -505,9 +517,9 @@ fun WearApp(
 
             stateHolder.SaveableStateProvider(currentKey) {
                 val listState = rememberTransformingLazyColumnState()
-                // Pantallas de un solo paso: cada visita empieza arriba. Si recuerdan el desplazamiento
-                // de la visita anterior, el encabezado queda pegado a la hora del reloj.
-                if (currentScreen in START_AT_TOP_SCREENS) {
+                // Pantallas de un solo paso y de estado: cada visita empieza arriba. Si recuerdan el
+                // desplazamiento de la visita anterior, el título queda fuera de vista o pegado a la hora.
+                if (currentKey in START_AT_TOP_KEYS) {
                     LaunchedEffect(currentKey) { listState.scrollToItem(0) }
                 }
                 val transformationSpec = rememberTransformationSpec()
