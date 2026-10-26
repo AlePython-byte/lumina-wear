@@ -617,3 +617,107 @@
 - **Enviar texto escrito:** en el emulador, el teclado no aceptó los toques simulados en su botón de enviar, así que el texto no llegó a la app. Falta probarlo a mano. Por lo mismo, la pantalla "Sin configurar" (solo se llega con una frase que las reglas no entienden) no se vio en el emulador.
 - Reintentar tras "NO SE PUDO" en una acción del asistente.
 - Las reglas no tienen pruebas automáticas: el proyecto no tiene dependencias de pruebas unitarias y no agregué ninguna.
+
+---
+
+## LW-010b-2 — Diagnóstico del asistente: certificado rechazado y servidor lento
+
+**Fecha:** 2026-10-25
+
+**Qué pasaba:** al consultar al servidor del asistente desde el emulador, la consulta fallaba y la app mostraba "Sin conexión".
+
+**Causa 1 — reloj del emulador:** el emulador tenía la hora atrasada y rechazaba el certificado del servidor por considerarlo todavía no válido. No era un error de la app ni del servidor. Lo resolví con un **arranque en frío** del emulador, que le devolvió la hora correcta.
+
+**Causa 2 — servidor lento:** algunas consultas al modelo tardaban demasiado. Lo corregí en el servidor (`worker/worker.js`):
+- puse un **tiempo máximo de 6 s** a la consulta al modelo; si se agota, el servidor responde un error controlado (504) en vez de quedarse esperando;
+- cambié a un **modelo más rápido**; el nombre del modelo no está en el código, se configura como variable del servicio;
+- la app conserva su tope total de 8 s, mayor que el del servidor para que este responda primero.
+
+También hice que el servidor nombre las escenas según el idioma de la app.
+
+**Estados:**
+- Implementado: sí (commit `feat(worker): agrega tiempo máximo a la consulta y nombra las escenas según el idioma`).
+- Compilado: no aplica al cambio del servidor, que es JavaScript y no pasa por Gradle.
+- Instalado: no aplica a la app, que no cambió en esta entrada.
+- Probado: el arranque en frío quitó el rechazo del certificado. Después, en LW-011b, una frase escrita ("hola") llegó al servidor desde el emulador y volvió su respuesta ("No entendí" con el texto del servidor), así que la consulta funciona de punta a punta.
+- Sin probar: no repetí aquí la medición de tiempos del modelo (los números están en `docs/documentacion.md`, tal como los registré entonces); tampoco el caso de los 6 s agotados contra el servicio real, ni el asistente en un reloj físico.
+
+---
+
+## LW-011a — Pulido, parte 1: hora, pantallas de estado, orden duplicada y Aplicar
+
+**Fecha:** 2026-10-25 y 2026-10-26
+
+**Qué hice:**
+- **Hora pegada al encabezado.** Las pantallas de un solo paso recordaban el desplazamiento de la visita anterior y el título quedaba pegado a la hora o fuera de vista. Ahora **Confirmar, Listo, Consultando y los errores del asistente empiezan arriba**, y también **Conectando, No se pudo y Sin conexión**, cada una con su propia clave de estado.
+- **Orden duplicada de brillo.** Al subir de más el brillo de la Lámpara y corregir hasta un valor que el hub ya había confirmado, la app volvía a enviar la orden. Ahora recuerda el último estado confirmado y no reenvía lo que el hub ya tiene. Ese valor no se guarda: si la app se recrea, la orden se vuelve a enviar, porque otro cliente pudo cambiar el hub.
+- **Aplicar cortado.** En la confirmación del asistente, con varias acciones o textos largos, Aplicar quedaba cortado por abajo. Ahora, si no cabe completo, la lista baja lo justo para que se vea entero (un máximo de ajustes, sin bucles) y, si ya cabe, no se mueve.
+
+**Estados:**
+- Implementado: sí, en cuatro commits (`fix(asistente)` ×2, `fix(estados)`, `fix(luz)`).
+- Compilado: sí. La compilación de LW-011b incluye estos cambios y terminó en `BUILD SUCCESSFUL`.
+- Instalado: sí, en el emulador Wear OS (`:app:installDebug`, LW-011b).
+- Probado en el emulador, al repasar las pantallas en LW-011b: Confirmar y Listo empiezan arriba; Conectando y No se pudo empiezan arriba; con "Apagar todas las luces" a fuente 1,3, Aplicar y Cancelar quedan completos y alcanzables.
+- Sin probar: la orden duplicada de brillo (no repetí la secuencia de subir y corregir con el hub); Aplicar con varias acciones y respuestas largas del servidor; el comportamiento en un reloj físico.
+
+---
+
+## LW-011b — Pulido, parte 2: fuente 1,3, tema oscuro, accesibilidad y auditoría
+
+**Fecha:** 2026-10-26
+
+Trabajé cuatro puntos, uno por commit. Salvo el tercero y el contraste, no hubo nada que corregir.
+
+**1. Fuente a 1,3.** Recorrí todas las pantallas en español: Inicio, Habitaciones, luces, Escenas, Favoritos (lista, Editar y vacío), Ajustes, Asistente y sus estados, Conectando y No se pudo. No encontré texto cortado ni botones inalcanzables, así que no cambié código. Observación: en Confirmar, la primera línea del título queda detrás de la hora porque la pantalla baja a propósito para dejar Aplicar completo (LW-011a).
+
+**2. Tema oscuro.** Recorrí las mismas pantallas. Los textos cumplen el mínimo de 4,5:1 (oscuro: 6,19 a 17,8; claro: 5,9 a 16,7). No hubo errores objetivos de legibilidad ni colores fuera de los tokens. Lo único bajo 3:1 eran los bordes de controles en oscuro (1,57:1), que traté en el punto de contraste de abajo.
+
+**3. Accesibilidad.** Revisé el árbol de la interfaz de cada pantalla: descripciones, tamaño táctil y orden de lectura. Los objetivos táctiles ya cumplían 48 dp (botones 48 dp, elementos de lista 60 a 82 dp, − y + de 56×48 dp) y el orden de lectura coincide con el visual. Corregí cuatro cosas:
+- **− y +:** el lector decía "Bajar brillo" y además el símbolo "−". Ahora el símbolo es decorativo y solo se anuncia la descripción.
+- **Botones con descripción propia** (Deshacer de escena y de asistente): leían la descripción y luego el texto visible. Ahora solo la descripción.
+- **"5 de 8 luces":** Inicio leía "5 / 8" y "luces encendidas" por separado; ahora se lee "5 de 8 luces encendidas" (cadena nueva en español e inglés).
+- **Quitar escena con nombre:** el botón decía "Quitar escena" sin decir cuál; ahora la descripción es "Quitar escena Descanso".
+
+**4. Auditoría del sistema de diseño.** Busqué `Color(0x…)`, `dp`, `sp`, formas y textos literales. Sin hallazgos que corregir: todos los colores están en `Color.kt`, no hay `dp` ni `sp` literales en pantallas, las formas usan tokens de radio y no hay texto visible fuera de `strings.xml`. Dejé como decisiones pendientes: la cadena `access_voice` sin uso, dos alturas de 60 dp repetidas, unas 35 apariciones de colores semánticos directos en pantallas y los textos de ejemplo de dos previews.
+
+**Contraste del borde de controles en oscuro.** Creé el token `controlBorder` solo para el borde del campo de texto y la pista del arco de brillo. Elegí `#606060`, el gris más cercano al `#363636` anterior que llega a 3:1: **3,03:1** sobre la superficie (`#101010`) y **3,34:1** sobre negro. El tema claro reutiliza su borde actual (3,76:1) y el borde de las tarjetas no cambió. Está en `Color.kt`, `Tokens.kt` y `docs/design-tokens.md`.
+
+**Estados:**
+- Implementado: sí. Accesibilidad (`fix(a11y)`) y contraste (`fix(tema)`) con código; fuente 1,3, tema oscuro y auditoría sin cambios de código.
+- Compilado: sí, `BUILD SUCCESSFUL` con `.\gradlew.bat :app:assembleDebug :app:installDebug --no-daemon --stacktrace` en las dos entregas con código.
+- Instalado: sí, en el emulador Wear OS.
+- Probado en el emulador, con capturas: fuente 1,3 y tema oscuro en las pantallas listadas; árbol de accesibilidad antes y después (descripciones de − y +, "5 de 8 luces encendidas", "Quitar escena Descanso"); borde del campo de texto medido en `#606060` en oscuro y `#7C8775` en claro, y pista del arco en `#606060`. Al terminar dejé el emulador en fuente 1,0 y tema claro.
+- **Sin probar:**
+  - **TalkBack real:** solo revisé el árbol de accesibilidad; lo que oye una persona lo deduzco, no lo escuché.
+  - **Fuente 1,3 con la app en inglés:** solo comprobé que ninguna cadena en inglés es mucho más larga que la española.
+  - **Reloj físico:** todo fue en el emulador.
+  - Los estados pulsado y enfocado en oscuro, y si los títulos se anuncian como encabezado.
+  - Las cadenas nuevas de accesibilidad en pantalla con la app en inglés.
+
+---
+
+## LW-012 — Documentación verificada contra el código
+
+**Fecha:** 2026-10-26
+
+**Qué hice:** comparé cada afirmación de `docs/documentacion.md` con el código y los recursos, y edité solo lo que estaba mal (11 correcciones):
+- el diagrama de navegación no incluía Escena activa, Sugerencia, la apertura de luces y escenas desde Favoritos ni Escribir;
+- "máximo tres niveles" no valía para el asistente con Escribir; ahora dice "tres pasos" hasta cualquier luz o escena y aclara que el asistente es un flujo aparte;
+- el texto visible de Inicio es "5 / 8 luces encendidas", no "5 de 8";
+- las listas muestran habitación y porcentaje junto al nombre de la escena;
+- Favoritos permite quitar y restaurar, no editar en general;
+- la paleta tiene 18 colores (con `controlBorder`), no 17;
+- faltaban tres roles semánticos y cuatro tokens de componente;
+- la clasificación atómica contradecía a `design-tokens.md` (el dial de brillo es organismo y las pantallas son plantillas y páginas);
+- español e inglés tienen las mismas claves salvo los dos nombres de idioma;
+- el hub solo reenvía una orden si el bombillo sigue distinto tras leer el estado.
+
+Confirmé sin cambios: 8 luces en 3 habitaciones, las 4 escenas, los archivos citados, los tres enlaces relativos, `minSdk 30`, y el flujo de conexión y del asistente (puertos, plazos de 6 y 8 s, validación en servidor y app, tope de 5 acciones).
+
+**No pude comprobar en el código:** los nombres de los modelos y los tiempos medidos (el modelo se configura como variable del servicio), el límite del plan gratuito, las pruebas con el bombillo real y con el modelo del cuadro "Hecho y probado", la respuesta al ejemplo «pon la sala tranquila» y la afirmación "una tarea por pantalla".
+
+**Estados:**
+- Implementado: sí, solo se editó `docs/documentacion.md`.
+- Compilado e instalado: no aplica, no hubo cambios de código.
+- Probado: verificación por lectura del código y de los recursos, no en ejecución.
+- Sin probar: lo listado arriba como no comprobable, además de TalkBack real, fuente 1,3 en inglés y reloj físico, que el documento ya marca como pendientes.
