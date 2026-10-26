@@ -4,6 +4,7 @@
     <string name="header_rooms">ROOMS</string>
     <string name="header_demo">DEMO</string>
     <string name="lights_counter">%1$d / %2$d</string>
+    <string name="lights_counter_a11y">%1$d of %2$d %3$s</string>
     <plurals name="lights_on_subtitle">
         <item quantity="one">light on</item>
         <item quantity="other">lights on</item>
@@ -96,6 +97,7 @@
     <string name="fav_detail_scene">%1$s · scene</string>
     <string name="fav_remove_light">Remove %1$s</string>
     <string name="fav_remove_scene">Remove scene</string>
+    <string name="fav_remove_scene_desc">Remove scene %1$s</string>
     <string name="fav_empty_title">One tap away.</string>
     <string name="fav_empty_body">Save a light or scene to find it here.</string>
     <string name="fav_add_plafon">Add ceiling light</string>

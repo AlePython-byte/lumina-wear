@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumnItemScope
@@ -68,6 +69,11 @@ fun ActionButton(
             .transformedHeight(scope, transformationSpec),
         transformation = with(scope) { SurfaceTransformation(transformationSpec) }
     ) {
-        Text(text = text, style = LuminaTypography.button)
+        // Con descripción propia, el texto visible no se vuelve a leer detrás de ella.
+        Text(
+            text = text,
+            style = LuminaTypography.button,
+            modifier = if (description != null) Modifier.clearAndSetSemantics {} else Modifier
+        )
     }
 }

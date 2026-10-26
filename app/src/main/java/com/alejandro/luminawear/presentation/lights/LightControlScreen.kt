@@ -27,6 +27,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -289,6 +290,7 @@ private fun StepButton(
             .border(LuminaBorder.width, StepButtonTokens.border, RoundedCornerShape(StepButtonTokens.radius))
             .semantics { contentDescription = description }
     ) {
-        Text(text = symbol, style = LuminaTypography.title)
+        // El símbolo es decorativo: el botón se anuncia solo con su descripción.
+        Text(text = symbol, style = LuminaTypography.title, modifier = Modifier.clearAndSetSemantics {})
     }
 }

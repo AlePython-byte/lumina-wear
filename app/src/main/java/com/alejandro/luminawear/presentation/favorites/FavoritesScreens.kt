@@ -42,6 +42,13 @@ private fun favoriteRemoveLabel(favorite: Favorite): String = when (favorite) {
     is Favorite.SceneFavorite -> stringResource(R.string.fav_remove_scene)
 }
 
+/** Con el nombre de la escena: "Quitar escena" a secas no distingue una de otra. Las luces ya llevan su nombre. */
+@Composable
+private fun favoriteRemoveDescription(favorite: Favorite): String? = when (favorite) {
+    is Favorite.LightFavorite -> null
+    is Favorite.SceneFavorite -> stringResource(R.string.fav_remove_scene_desc, stringResource(favorite.scene.nameRes))
+}
+
 /**
  * Lista de favoritos. Con 2 o más: ítems + Editar + Inicio. Con uno: ítem + Quitar + Restaurar demo + Inicio.
  * Sin favoritos: estado vacío con "Añadir plafón" e "Inicio".
@@ -105,7 +112,10 @@ fun FavoritesScreen(
             if (favorites.size == 1) {
                 val only = favorites.first()
                 item {
-                    ActionButton(favoriteRemoveLabel(only), this, transformationSpec, { onRemoveClick(only) }, secondary = true)
+                    ActionButton(
+                        favoriteRemoveLabel(only), this, transformationSpec, { onRemoveClick(only) },
+                        secondary = true, description = favoriteRemoveDescription(only)
+                    )
                 }
                 item {
                     ActionButton(stringResource(R.string.btn_restore_demo), this, transformationSpec, onRestoreDemoClick, secondary = true)
@@ -148,7 +158,10 @@ fun FavoritesEditScreen(
         }
         favorites.forEach { favorite ->
             item(key = favorite.id) {
-                ActionButton(favoriteRemoveLabel(favorite), this, transformationSpec, { onRemoveClick(favorite) }, secondary = true)
+                ActionButton(
+                    favoriteRemoveLabel(favorite), this, transformationSpec, { onRemoveClick(favorite) },
+                    secondary = true, description = favoriteRemoveDescription(favorite)
+                )
             }
         }
         item {

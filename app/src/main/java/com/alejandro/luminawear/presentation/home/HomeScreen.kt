@@ -17,6 +17,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumnItemScope
@@ -86,11 +88,14 @@ fun HomeScreen(
             }
         }
         item {
+            val subtitle = pluralStringResource(R.plurals.lights_on_subtitle, lightsOn)
+            val counterDesc = stringResource(R.string.lights_counter_a11y, lightsOn, totalLights, subtitle)
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .transformedHeight(this, transformationSpec)
-                    .padding(vertical = LuminaSpacing.sm),
+                    .padding(vertical = LuminaSpacing.sm)
+                    .semantics(mergeDescendants = true) { contentDescription = counterDesc },
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
@@ -100,7 +105,7 @@ fun HomeScreen(
                     color = LuminaTheme.colors.accentContent
                 )
                 Text(
-                    text = pluralStringResource(R.plurals.lights_on_subtitle, lightsOn),
+                    text = subtitle,
                     style = LuminaTypography.body,
                     color = LuminaTheme.colors.muted
                 )
