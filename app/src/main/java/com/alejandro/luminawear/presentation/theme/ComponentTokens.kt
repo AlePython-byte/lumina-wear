@@ -83,7 +83,7 @@ object TextInputTokens {
     val container: Color @Composable get() = LuminaTheme.colors.surface
     val content: Color @Composable get() = LuminaTheme.colors.text
     val placeholder: Color @Composable get() = LuminaTheme.colors.muted
-    val border: Color @Composable get() = LuminaTheme.colors.border
+    val border: Color @Composable get() = LuminaTheme.colors.controlBorder
     val borderFocused: Color @Composable get() = LuminaTheme.colors.accentContent
     val cursor: Color @Composable get() = LuminaTheme.colors.accentContent
     val counter: Color @Composable get() = LuminaTheme.colors.muted
@@ -94,7 +94,7 @@ object TextInputTokens {
 
 object BrightnessDialTokens {
     val arc: Color @Composable get() = LuminaTheme.colors.accentContent
-    val track: Color @Composable get() = LuminaTheme.colors.border
+    val track: Color @Composable get() = LuminaTheme.colors.controlBorder
     val value: Color @Composable get() = LuminaTheme.colors.text
     val valueOff: Color @Composable get() = LuminaTheme.colors.muted
     val label: Color @Composable get() = LuminaTheme.colors.muted

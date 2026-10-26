@@ -8,6 +8,7 @@ Fuente de verdad: Figma `vZFxwvxXECtL9x7WdRtmoa`, colecciones **Lumina / Primiti
 |---|---|---|
 | black / surface / white | `black` / `surface` / `white` | #000000 / #101010 / #F4F4F0 |
 | muted / border | `muted` / `border` | #96968E / #363636 |
+| controlBorder (solo oscuro) | `controlBorder` | #606060 |
 | lime / pressed | `lime` / `pressed` | #C8FF37 / #ACD92F |
 | warning / danger | `warning` / `danger` | #FFB84D / #FF5A52 |
 | light background / surface / text | `lightBackground` / `lightSurface` / `lightText` | #FFFFFF / #F3F5F0 / #172016 |
@@ -23,6 +24,7 @@ Fuente de verdad: Figma `vZFxwvxXECtL9x7WdRtmoa`, colecciones **Lumina / Primiti
 | text | `text` | lightText | white | onSurface, onBackground |
 | muted | `muted` | lightMuted | muted | onSurfaceVariant |
 | border | `border` | lightBorder | border | outline |
+| controlBorder | `controlBorder` | lightBorder | controlBorder | — |
 | accent | `accent` | lime | lime | primary |
 | onAccent | `onAccent` | black | black | onPrimary |
 | pressed | `pressed` | pressed | pressed | primaryDim |
@@ -31,6 +33,8 @@ Fuente de verdad: Figma `vZFxwvxXECtL9x7WdRtmoa`, colecciones **Lumina / Primiti
 | accentContent | `accentContent` | lightAccentContent | lime | — |
 
 Regla: en claro `accent` solo es relleno; texto, arcos e iconos de acento usan `accentContent`.
+
+`controlBorder`: borde de los controles que el usuario debe distinguir del fondo (borde del campo de texto y pista del arco de brillo). En oscuro vale #606060, el gris más cercano al `border` (#363636) que llega a 3:1 en ambos fondos: 3,03:1 sobre `surface` (#101010) y 3,34:1 sobre `bg` (#000000). En claro reutiliza `lightBorder` (3,76:1 sobre blanco), sin cambios. El `border` de tarjetas y botones no cambia (en oscuro 1,57:1 sobre `surface`, decorativo).
 Escala: `LuminaSpacing` 0·4·8·12·16·20·24·32·48 dp · `LuminaRadius` 4·8·12·18·999 · `LuminaSizes.touch` 48 dp · `LuminaBorder.width` 1 dp.
 Tipografía (`Type.kt`, familia en `LuminaFontFamily`): display Black 48/48 · title Bold 20/24 · body Regular 14/18 · button Bold 14/18 · label Bold 12/16 · time Regular 12/16.
 
@@ -44,7 +48,8 @@ Tipografía (`Type.kt`, familia en `LuminaFontFamily`): display Black 48/48 · t
 | SceneCard | `SceneCardTokens` | surface · accentContent · text · muted |
 | LightToggle | `LightToggleTokens` | luz apagada accent/onAccent (pressed) · luz encendida surface/text/border |
 | NavigationItem | `NavigationItemTokens` | surface · text · disabled muted · border · **Selected**: surface + borde accentContent + detalle accentContent (opciones de Ajustes, 60 dp) |
-| BrightnessDial | `BrightnessDialTokens` | arco accentContent · pista border · valor text/muted · etiqueta muted |
+| BrightnessDial | `BrightnessDialTokens` | arco accentContent · pista controlBorder · valor text/muted · etiqueta muted |
+| TextInput | `TextInputTokens` | surface · text · placeholder/contador muted · borde controlBorder · foco accentContent |
 | StepButton | `StepButtonTokens` | surface · text · disabled muted · border |
 
 ## Atomic Design (archivos reales)

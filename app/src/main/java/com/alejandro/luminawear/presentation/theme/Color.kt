@@ -13,6 +13,7 @@ object LuminaPalette {
     val white = Color(0xFFF4F4F0)
     val muted = Color(0xFF96968E)
     val border = Color(0xFF363636)
+    val controlBorder = Color(0xFF606060)
     val lime = Color(0xFFC8FF37)
     val pressed = Color(0xFFACD92F)
     val warning = Color(0xFFFFB84D)
