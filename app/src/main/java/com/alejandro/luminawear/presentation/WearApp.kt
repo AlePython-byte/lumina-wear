@@ -156,6 +156,10 @@ fun WearApp(
     // Orden pendiente y último estado confirmado de la Lámpara, en formato "1:45".
     var hubTarget by rememberSaveable { mutableStateOf("") }
     var hubRollback by rememberSaveable { mutableStateOf("") }
+    // Último estado de la Lámpara que el hub confirmó ("" = no se sabe). Una orden igual a ese estado
+    // no se vuelve a enviar (p. ej. subir de más y corregir hasta el valor que ya estaba confirmado).
+    // No se guarda: si la app se recrea, otro cliente pudo cambiar el hub, así que se vuelve a enviar.
+    var hubConfirmed by remember { mutableStateOf("") }
     // Acción masiva en curso (HUB_ACTION_*; "" = control de la luz) y lo necesario para deshacerla:
     // snapshot de todas las luces (mismo formato que Deshacer), Deshacer previo y pantalla de origen.
     var hubAction by rememberSaveable { mutableStateOf("") }
@@ -237,6 +241,9 @@ fun WearApp(
         change()
         val after = lightStateHolder.states[lightId]
         if (hubStatus == HubStatus.IDLE && before == after) return
+        // Sin cambio real sobre la orden ya pendiente o en curso: reiniciarla cancelaría el envío en
+        // vuelo y lo repetiría con el mismo valor.
+        if (before == after && encodeLightState(after) == hubTarget) return
         hubAction = ""
         hubTarget = encodeLightState(after)
         if (immediate) startHubRequest() else hubStatus = HubStatus.DEBOUNCING
@@ -369,6 +376,8 @@ fun WearApp(
     }
 
     fun cancelHub() {
+        // La orden cancelada pudo llegar al hub: ya no se sabe qué estado tiene.
+        hubConfirmed = ""
         rollbackHubOrder()
         clearHubOrder()
     }
@@ -409,7 +418,13 @@ fun WearApp(
         when (hubStatus) {
             HubStatus.DEBOUNCING -> {
                 delay(HUB_DEBOUNCE_MS)
-                startHubRequest()
+                if (hubAction.isEmpty() && hubTarget == hubConfirmed) {
+                    // El hub ya tiene este estado: solo se envía la última orden que cambia algo.
+                    Log.i(HUB_SYNC_TAG, "luz: $hubTarget ya confirmado por el hub, no se reenvía")
+                    clearHubOrder()
+                } else {
+                    startHubRequest()
+                }
             }
             HubStatus.CONNECTING -> {
                 val target = decodeLightState(hubTarget)
@@ -425,8 +440,11 @@ fun WearApp(
                     .setLight(HUB_LIGHT_ID, target.isOn, target.brightness)
                 reveal.cancel()
                 if (result.isSuccess) {
+                    hubConfirmed = encodeLightState(target)
                     clearHubOrder()
                 } else {
+                    // Puede haberse aplicado sin que llegara la confirmación: ya no se sabe qué tiene el hub.
+                    hubConfirmed = ""
                     rollbackHubOrder()
                     hubStatus = HubStatus.ERROR
                 }
