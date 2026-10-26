@@ -560,3 +560,60 @@
 - Modo tuya.
 
 **Observación:** al final del ajuste de brillo, la app envió dos órdenes seguidas con el mismo valor (65 %), y la segunda salió antes de que respondiera la primera. Ambas dieron 200 y no causaron problema, pero sobra una. No se investigó en esta tarea.
+
+---
+
+## LW-010b — Asistente de luces (texto y frases rápidas)
+
+**Fecha:** 2026-10-25
+
+**Qué hice:**
+- Agregué el acceso **Asistente** en Inicio, entre Favoritos y Ajustes. No había un acceso previo: el botón "Voz" se había quitado en LW-009a. La voz queda fuera de esta tarea.
+- **Pantalla del asistente:** 5 frases rápidas (Apagar todo, Modo lectura, Modo descanso, Encender la lámpara, Lámpara al 50 %), cada una con su detalle ("Dormitorio · 70 %"), y la opción **Escribir**. Las frases pasan por las mismas reglas que el texto escrito.
+- **Escribir:** campo de texto con tope de 200 caracteres, contador, Enviar y Volver. Usé `BasicTextField`, que ya venía con las dependencias. La tecla Enter del teclado también envía.
+- **Reglas locales** (`AssistantRules.kt`, funciones puras sin Android). Entienden:
+  - apagar/encender todo;
+  - las 4 escenas por nombre o sinónimo (descanso/relax, lectura/leer, concentración/enfoque, buenas noches/dormir);
+  - encender/apagar una o varias luces por nombre, en español o inglés;
+  - "al N %", "N por ciento", "to N" para el brillo.
+  - No distinguen acentos ni mayúsculas. Si no reconocen la frase devuelven `null`.
+- **Servidor:** si las reglas no entienden y hay URL y token, consulto el servidor con `HttpURLConnection` en `Dispatchers.IO`, con un tope total de 8 s. Solo envío `text`, `lang` y `lights` (id, nombre, habitación, encendida, brillo). Cancelar corta la conexión. No sigo redirecciones.
+- **Validación siempre, venga de donde venga:** ids que existen en el estado actual, brillo recortado a 0–100, solo las 4 escenas, como máximo 5 acciones. Lo inválido se descarta; si no queda nada, muestro "No entendí".
+- **Confirmación:** resumen legible ("Encender Lámpara (Sala) al 50 %", "Escena: Lectura") y la respuesta del asistente, con Aplicar y Cancelar.
+- **Al aplicar** uso la misma ruta que las escenas (`runHubAction`). Si cambia la Lámpara se envía una sola orden al hub; si falla, todas las luces vuelven a como estaban y aparece "NO SE PUDO" con Reintentar. La pantalla **Listo** ofrece Deshacer con el mismo snapshot de una capa.
+- **Estados:** cargando (con Cancelar), no entendí, sin conexión, error del servidor y sin configurar. Reutilizan la plantilla de Conectando / No se pudo.
+- Todos los textos están en `strings.xml` en español e inglés. Porcentajes: "30 %" en español y "30%" en inglés.
+- Configuración: activé `buildConfig` y dos campos, `ASSISTANT_URL` y `ASSISTANT_TOKEN`, que se leen de `local.properties` y quedan vacíos si faltan. No hay URL ni token en el código.
+- Documenté el servidor en `worker/README.md`: qué hace, contrato, variables sin valores, despliegue y límites de seguridad.
+
+**Decisiones:**
+- "Encender todo" es una acción solo local (`TurnOnAll`): el contrato del servidor no la tiene y con 8 luces superaría el tope de 5 acciones.
+- Si la frase nombra una habitación ("apaga las luces del dormitorio"), las reglas no la interpretan como "toda la casa": dejo que decida el servidor.
+- Si el servidor manda `set_light` sin brillo, la luz conserva su brillo actual. Encender con 0 % la deja apagada.
+- Cuando el servidor no entiende y explica por qué, muestro su respuesta en vez del texto genérico.
+
+**Seguridad (honestamente):** el token va dentro del APK y se puede extraer. Lo mitigan los topes de entrada y salida del servidor, el límite del plan gratuito y que la app valida y confirma todo antes de actuar. Lo detallo en `worker/README.md`.
+
+**Estados:**
+- Implementado: sí.
+- Compilado: sí, `BUILD SUCCESSFUL` con `.\gradlew.bat :app:assembleDebug --no-daemon --stacktrace`, sin warnings de Kotlin.
+- Preview renderizado: no. Agregué previews (frases, escribir, confirmar, listo, cargando, sin conexión, sin configurar; claro, oscuro y escalas de fuente), pero no los rendericé.
+- Instalado: sí, en el emulador Wear OS (`:app:installDebug`).
+- Probado en el emulador:
+
+| Caso | Resultado |
+|---|---|
+| Inicio → Asistente | Aparece la lista con las 5 frases y Escribir |
+| "Modo lectura" → Aplicar | Confirmación "Escena: Lectura" → Listo. La Lámpara no cambia, así que no se envía nada al hub |
+| Deshacer desde Listo | Vuelve a la lista; Dormitorio regresa a 2 de 3 encendidas |
+| "Lámpara al 50 %" → Aplicar con el hub apagado | Una orden al hub; a los 10 s, "NO SE PUDO". Volver regresa a la confirmación y la Lámpara sigue al 45 % |
+| Cancelar en la confirmación | Vuelve a la lista y no se envía nada |
+| App en inglés: "Reading mode" | La reconocen las reglas: "Scene: Reading". Porcentajes sin espacio ("Bedroom · 70%") |
+| Fuente a 1,3 | Lista y confirmación sin texto cortado (las filas crecen) |
+| Campo de texto | Se ve el contador centrado y el borde de foco |
+
+**Sin probar:**
+- **Consulta al servidor:** la compilación quedó con URL y token vacíos (`local.properties` no tiene `assistant.url` ni `assistant.token`). Tampoco probé "sin conexión", "error del servidor" ni Cancelar durante la carga.
+- **Enviar texto escrito:** en el emulador, el teclado no aceptó los toques simulados en su botón de enviar, así que el texto no llegó a la app. Falta probarlo a mano. Por lo mismo, la pantalla "Sin configurar" (solo se llega con una frase que las reglas no entienden) no se vio en el emulador.
+- Reintentar tras "NO SE PUDO" en una acción del asistente.
+- Las reglas no tienen pruebas automáticas: el proyecto no tiene dependencias de pruebas unitarias y no agregué ninguna.
