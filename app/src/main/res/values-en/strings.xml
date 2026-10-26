@@ -108,4 +108,42 @@
     <string name="hub_error_body">The light didn’t respond.</string>
     <string name="btn_cancel">Cancel</string>
     <string name="btn_retry">Retry</string>
+
+    <string name="access_assistant">Assistant</string>
+    <string name="assistant_quick_header">Quick phrases</string>
+    <string name="assistant_phrase_off_all">Turn everything off</string>
+    <string name="assistant_phrase_read">Reading mode</string>
+    <string name="assistant_phrase_relax">Relax mode</string>
+    <string name="assistant_phrase_lamp_on">Turn on the lamp</string>
+    <string name="assistant_phrase_lamp_50" formatted="false">Lamp to 50%</string>
+    <string name="assistant_detail_all_lights">All lights</string>
+    <string name="assistant_write">Type</string>
+    <string name="assistant_write_detail">Up to %1$d characters</string>
+    <string name="assistant_input_hint">e.g. turn off the desk</string>
+    <string name="assistant_input_desc">Light command, up to %1$d characters</string>
+    <string name="assistant_input_counter">%1$d/%2$d</string>
+    <string name="assistant_btn_send">Send</string>
+    <string name="assistant_loading_header">Asking</string>
+    <string name="assistant_loading_title">Understanding your request</string>
+    <string name="assistant_confirm_header">Confirm</string>
+    <string name="assistant_btn_apply">Apply</string>
+    <string name="assistant_done_header">Done</string>
+    <string name="assistant_done_title">Changes applied</string>
+    <string name="assistant_btn_undo_desc">Undo the assistant’s changes and restore the lights</string>
+    <string name="assistant_action_off_all">Turn off all lights</string>
+    <string name="assistant_action_on_all">Turn on all lights</string>
+    <string name="assistant_action_scene">Scene: %1$s</string>
+    <string name="assistant_action_light_on_percent">Turn on %1$s (%2$s) at %3$d%%</string>
+    <string name="assistant_action_light_on">Turn on %1$s (%2$s)</string>
+    <string name="assistant_action_light_off">Turn off %1$s (%2$s)</string>
+    <string name="assistant_not_understood_header">Didn’t get that</string>
+    <string name="assistant_not_understood_body">Try different words or use a quick phrase.</string>
+    <string name="assistant_network_header">Offline</string>
+    <string name="assistant_network_body">I couldn’t reach the assistant. Quick phrases work without internet.</string>
+    <string name="assistant_server_header">Something went wrong</string>
+    <string name="assistant_server_body">The assistant didn’t answer properly. Try again or use a quick phrase.</string>
+    <string name="assistant_config_header">Not set up</string>
+    <string name="assistant_config_title">Quick phrases only</string>
+    <string name="assistant_config_body">The online assistant isn’t set up. Quick phrases still work.</string>
+    <string name="assistant_btn_phrases">Quick phrases</string>
 </resources>

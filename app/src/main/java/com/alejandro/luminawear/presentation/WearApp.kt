@@ -22,7 +22,10 @@ import androidx.wear.compose.material3.lazy.TransformationSpec
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import androidx.wear.compose.ui.tooling.preview.WearPreviewDevices
 import androidx.wear.compose.ui.tooling.preview.WearPreviewFontScales
+import com.alejandro.luminawear.BuildConfig
 import com.alejandro.luminawear.R
+import com.alejandro.luminawear.data.AssistantClient
+import com.alejandro.luminawear.data.AssistantResult
 import com.alejandro.luminawear.data.DEFAULT_HUB_URL
 import com.alejandro.luminawear.data.HUB_LIGHT_ID
 import com.alejandro.luminawear.data.LOCAL_NETWORK_PERMISSION
@@ -31,6 +34,12 @@ import com.alejandro.luminawear.data.needsLocalNetworkPermission
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.LocalTime
+import com.alejandro.luminawear.presentation.assistant.AssistantConfirmScreen
+import com.alejandro.luminawear.presentation.assistant.AssistantDoneScreen
+import com.alejandro.luminawear.presentation.assistant.AssistantErrorScreen
+import com.alejandro.luminawear.presentation.assistant.AssistantInputScreen
+import com.alejandro.luminawear.presentation.assistant.AssistantLoadingScreen
+import com.alejandro.luminawear.presentation.assistant.AssistantScreen
 import com.alejandro.luminawear.presentation.favorites.FavoritesEditScreen
 import com.alejandro.luminawear.presentation.favorites.FavoritesScreen
 import com.alejandro.luminawear.presentation.home.HomeScreen
@@ -52,7 +61,18 @@ import com.alejandro.luminawear.presentation.settings.SettingsScreen
 import com.alejandro.luminawear.presentation.state.parseLightStates
 import com.alejandro.luminawear.presentation.state.serializeLightStates
 import com.alejandro.luminawear.presentation.state.AppLanguage
+import com.alejandro.luminawear.presentation.state.ASSISTANT_MAX_TEXT
+import com.alejandro.luminawear.presentation.state.AssistantAction
+import com.alejandro.luminawear.presentation.state.AssistantError
+import com.alejandro.luminawear.presentation.state.AssistantLight
+import com.alejandro.luminawear.presentation.state.applyAssistantActions
+import com.alejandro.luminawear.presentation.state.decodeAssistantActions
+import com.alejandro.luminawear.presentation.state.encodeAssistantActions
+import com.alejandro.luminawear.presentation.state.parseLocalCommand
+import com.alejandro.luminawear.presentation.state.validateAssistantActions
 import com.alejandro.luminawear.presentation.state.DEFAULT_FAVORITES
+import com.alejandro.luminawear.presentation.state.HUB_ACTION_ASSISTANT_PREFIX
+import com.alejandro.luminawear.presentation.state.HUB_ACTION_ASSISTANT_UNDO
 import com.alejandro.luminawear.presentation.state.FAVORITE_PLAFON_ID
 import com.alejandro.luminawear.presentation.state.HUB_ACTION_RESTORE_DEMO
 import com.alejandro.luminawear.presentation.state.HUB_ACTION_SCENE_PREFIX
@@ -76,8 +96,12 @@ import com.alejandro.luminawear.presentation.theme.LuminaWearTheme
 import com.alejandro.luminawear.presentation.theme.ThemeMode
 
 private const val HUB_SYNC_TAG = "HubSync"
+private const val ASSISTANT_TAG = "Assistant"
 
-enum class ScreenType { HOME, ROOMS, ROOM_DETAIL, LIGHT_CONTROL, SETTINGS, SCENES, SCENE_DETAIL, SCENE_ACTIVE, SUGGESTION, FAVORITES, FAVORITES_EDIT }
+enum class ScreenType {
+    HOME, ROOMS, ROOM_DETAIL, LIGHT_CONTROL, SETTINGS, SCENES, SCENE_DETAIL, SCENE_ACTIVE, SUGGESTION, FAVORITES, FAVORITES_EDIT,
+    ASSISTANT, ASSISTANT_INPUT, ASSISTANT_LOADING, ASSISTANT_CONFIRM, ASSISTANT_DONE, ASSISTANT_ERROR
+}
 
 @Composable
 fun WearApp(
@@ -125,6 +149,15 @@ fun WearApp(
     // CONECTANDO solo se muestra si el hub tarda más de HUB_CONNECTING_REVEAL_MS.
     var hubConnectingVisible by remember { mutableStateOf(false) }
     val context = LocalContext.current
+
+    // Asistente: borrador del campo de texto, pedido en curso, propuesta validada y error.
+    val assistantClient = remember { AssistantClient(BuildConfig.ASSISTANT_URL, BuildConfig.ASSISTANT_TOKEN) }
+    var assistantDraft by rememberSaveable { mutableStateOf("") }
+    var assistantRequest by rememberSaveable { mutableStateOf("") }
+    var assistantFromInput by rememberSaveable { mutableStateOf(false) }
+    var assistantReply by rememberSaveable { mutableStateOf("") }
+    var assistantActions by rememberSaveable { mutableStateOf("") }
+    var assistantError by rememberSaveable { mutableStateOf(AssistantError.NOT_UNDERSTOOD.name) }
 
     fun updateFavorites(ids: List<String>) {
         favoritesRaw = serializeFavoriteIds(ids)
@@ -244,6 +277,75 @@ fun WearApp(
         currentScreen = ScreenType.SCENE_DETAIL.name
     }
 
+    /** Luces con nombre y habitación en el idioma de la app, para las reglas y el servidor. */
+    fun assistantLights(): List<AssistantLight> = appLights.map { light ->
+        val state = lightStateHolder.states[light.id] ?: LightState(false, 50)
+        val room = appRooms.firstOrNull { it.id == light.roomId }
+        AssistantLight(
+            id = light.id,
+            name = context.getString(light.nameRes),
+            room = room?.let { context.getString(it.nameRes) }.orEmpty(),
+            on = state.isOn,
+            brightness = state.brightness
+        )
+    }
+
+    fun showAssistantError(error: AssistantError) {
+        assistantError = error.name
+        currentScreen = ScreenType.ASSISTANT_ERROR.name
+    }
+
+    /** Valida siempre (venga de las reglas o del servidor) y pide confirmación; si no queda nada, "no entendí". */
+    fun proposeAssistantActions(reply: String, actions: List<AssistantAction>) {
+        val valid = validateAssistantActions(actions, lightStateHolder.states)
+        Log.i(ASSISTANT_TAG, "${actions.size} acciones recibidas, ${valid.size} válidas")
+        assistantReply = reply
+        if (valid.isEmpty()) {
+            showAssistantError(AssistantError.NOT_UNDERSTOOD)
+        } else {
+            assistantActions = encodeAssistantActions(valid)
+            currentScreen = ScreenType.ASSISTANT_CONFIRM.name
+        }
+    }
+
+    /** Reglas locales primero; si no entienden y hay configuración, se consulta al servidor. */
+    fun submitAssistant(text: String, fromInput: Boolean) {
+        val request = text.trim().take(ASSISTANT_MAX_TEXT)
+        if (request.isEmpty()) return
+        assistantRequest = request
+        assistantFromInput = fromInput
+        assistantReply = ""
+        val local = parseLocalCommand(request, assistantLights())
+        when {
+            local != null -> {
+                Log.i(ASSISTANT_TAG, "Reglas locales: ${local.size} acciones")
+                proposeAssistantActions(reply = "", actions = local)
+            }
+            !assistantClient.isConfigured -> showAssistantError(AssistantError.NOT_CONFIGURED)
+            else -> currentScreen = ScreenType.ASSISTANT_LOADING.name
+        }
+    }
+
+    /** Vuelve a donde se hizo el pedido (campo de texto o frases rápidas). */
+    fun backToAssistantOrigin() {
+        currentScreen = if (assistantFromInput) ScreenType.ASSISTANT_INPUT.name else ScreenType.ASSISTANT.name
+    }
+
+    /** Aplica por la misma ruta que las escenas: una sola orden al hub si cambia la Lámpara, con rollback. */
+    fun applyAssistant(encoded: String) = runHubAction(HUB_ACTION_ASSISTANT_PREFIX + encoded) {
+        val actions = validateAssistantActions(decodeAssistantActions(encoded), lightStateHolder.states)
+        undoSnapshot = serializeLightStates(lightStateHolder.toMap())
+        lightStateHolder.restore(applyAssistantActions(lightStateHolder.toMap(), actions))
+        assistantActions = encoded
+        currentScreen = ScreenType.ASSISTANT_DONE.name
+    }
+
+    fun undoAssistant() = runHubAction(HUB_ACTION_ASSISTANT_UNDO) {
+        lightStateHolder.restore(parseLightStates(undoSnapshot))
+        undoSnapshot = ""
+        currentScreen = ScreenType.ASSISTANT.name
+    }
+
     fun clearHubOrder() {
         hubRollback = ""
         hubAction = ""
@@ -268,6 +370,8 @@ fun WearApp(
             action == HUB_ACTION_TURN_OFF_ALL -> turnOffAll()
             action == HUB_ACTION_UNDO -> undoScene()
             action == HUB_ACTION_RESTORE_DEMO -> restoreDemo()
+            action == HUB_ACTION_ASSISTANT_UNDO -> undoAssistant()
+            action.startsWith(HUB_ACTION_ASSISTANT_PREFIX) -> applyAssistant(action.removePrefix(HUB_ACTION_ASSISTANT_PREFIX))
             action.startsWith(HUB_ACTION_SCENE_PREFIX) ->
                 sceneById(action.removePrefix(HUB_ACTION_SCENE_PREFIX))?.let { activateScene(it) }
         }
@@ -315,6 +419,18 @@ fun WearApp(
             HubStatus.IDLE, HubStatus.PERMISSION, HubStatus.ERROR -> Unit
         }
     }
+    // Consulta al servidor mientras se muestra ASSISTANT_LOADING. Salir de esa pantalla (Cancelar,
+    // Atrás) cancela la corrutina y corta la conexión. Tras recrear la Activity se vuelve a pedir.
+    LaunchedEffect(currentScreen, assistantRequest) {
+        if (currentScreen != ScreenType.ASSISTANT_LOADING.name) return@LaunchedEffect
+        when (val result = assistantClient.ask(assistantRequest, language.tag, assistantLights())) {
+            is AssistantResult.Success -> proposeAssistantActions(result.reply, result.actions)
+            AssistantResult.NotConfigured -> showAssistantError(AssistantError.NOT_CONFIGURED)
+            AssistantResult.NetworkError -> showAssistantError(AssistantError.NETWORK)
+            AssistantResult.ServerError -> showAssistantError(AssistantError.SERVER)
+        }
+    }
+
     val hubOverlay = (hubStatus == HubStatus.CONNECTING && hubConnectingVisible) || hubStatus == HubStatus.ERROR
 
     BackHandler(currentScreen != ScreenType.HOME.name || hubOverlay) {
@@ -356,6 +472,15 @@ fun WearApp(
                 undoSnapshot = ""
                 openedFromFavorites = false
                 currentScreen = ScreenType.SCENES.name
+            }
+            ScreenType.ASSISTANT.name -> currentScreen = ScreenType.HOME.name
+            ScreenType.ASSISTANT_INPUT.name -> currentScreen = ScreenType.ASSISTANT.name
+            ScreenType.ASSISTANT_LOADING.name,
+            ScreenType.ASSISTANT_CONFIRM.name,
+            ScreenType.ASSISTANT_ERROR.name -> backToAssistantOrigin()
+            ScreenType.ASSISTANT_DONE.name -> {
+                undoSnapshot = ""
+                currentScreen = ScreenType.ASSISTANT.name
             }
         }
     }
@@ -402,6 +527,7 @@ fun WearApp(
                                 onRoomsClick = { currentScreen = ScreenType.ROOMS.name },
                                 onScenesClick = { currentScreen = ScreenType.SCENES.name },
                                 onFavoritesClick = { currentScreen = ScreenType.FAVORITES.name },
+                                onAssistantClick = { currentScreen = ScreenType.ASSISTANT.name },
                                 onSettingsClick = { currentScreen = ScreenType.SETTINGS.name },
                                 suggestion = if (suggestionDismissed) null else suggestion,
                                 onSuggestionClick = { currentScreen = ScreenType.SUGGESTION.name },
@@ -516,6 +642,71 @@ fun WearApp(
                                 },
                                 onDismissClick = {
                                     suggestionDismissed = true
+                                    currentScreen = ScreenType.HOME.name
+                                },
+                                contentPadding = contentPadding,
+                                listState = listState,
+                                transformationSpec = transformationSpec
+                            )
+                        }
+                        ScreenType.ASSISTANT.name -> {
+                            AssistantScreen(
+                                onPhraseClick = { phrase -> submitAssistant(phrase, fromInput = false) },
+                                onWriteClick = { currentScreen = ScreenType.ASSISTANT_INPUT.name },
+                                onHomeClick = { currentScreen = ScreenType.HOME.name },
+                                contentPadding = contentPadding,
+                                listState = listState,
+                                transformationSpec = transformationSpec
+                            )
+                        }
+                        ScreenType.ASSISTANT_INPUT.name -> {
+                            AssistantInputScreen(
+                                text = assistantDraft,
+                                onTextChange = { assistantDraft = it },
+                                onSendClick = { submitAssistant(assistantDraft, fromInput = true) },
+                                onBackClick = { currentScreen = ScreenType.ASSISTANT.name },
+                                contentPadding = contentPadding,
+                                listState = listState,
+                                transformationSpec = transformationSpec
+                            )
+                        }
+                        ScreenType.ASSISTANT_LOADING.name -> {
+                            AssistantLoadingScreen(
+                                onCancelClick = ::backToAssistantOrigin,
+                                contentPadding = contentPadding,
+                                listState = listState,
+                                transformationSpec = transformationSpec
+                            )
+                        }
+                        ScreenType.ASSISTANT_ERROR.name -> {
+                            AssistantErrorScreen(
+                                error = AssistantError.entries.firstOrNull { it.name == assistantError } ?: AssistantError.NOT_UNDERSTOOD,
+                                reply = assistantReply,
+                                onRetryClick = { submitAssistant(assistantRequest, assistantFromInput) },
+                                onPhrasesClick = { currentScreen = ScreenType.ASSISTANT.name },
+                                onBackClick = ::backToAssistantOrigin,
+                                contentPadding = contentPadding,
+                                listState = listState,
+                                transformationSpec = transformationSpec
+                            )
+                        }
+                        ScreenType.ASSISTANT_CONFIRM.name -> {
+                            AssistantConfirmScreen(
+                                reply = assistantReply,
+                                actions = decodeAssistantActions(assistantActions),
+                                onApplyClick = { applyAssistant(assistantActions) },
+                                onCancelClick = ::backToAssistantOrigin,
+                                contentPadding = contentPadding,
+                                listState = listState,
+                                transformationSpec = transformationSpec
+                            )
+                        }
+                        ScreenType.ASSISTANT_DONE.name -> {
+                            AssistantDoneScreen(
+                                actions = decodeAssistantActions(assistantActions),
+                                onUndoClick = ::undoAssistant,
+                                onHomeClick = {
+                                    undoSnapshot = ""
                                     currentScreen = ScreenType.HOME.name
                                 },
                                 contentPadding = contentPadding,
@@ -1234,4 +1425,97 @@ fun PreviewHubErrorLight() = FavoritesPreviewHost(ThemeMode.LIGHT) { padding, st
 @Composable
 fun PreviewHubErrorDark() = FavoritesPreviewHost(ThemeMode.DARK) { padding, state, spec ->
     HubErrorScreen(onRetryClick = {}, onBackClick = {}, contentPadding = padding, listState = state, transformationSpec = spec)
+}
+
+// Previews del asistente (LW-010b): frases, escribir, confirmar, listo y errores; claro, oscuro y escalas de fuente.
+
+private val previewAssistantActions = listOf(
+    AssistantAction.SetLight("living_lampara", on = true, brightness = 50),
+    AssistantAction.ApplyScene("read"),
+    AssistantAction.SetLight("study_escritorio", on = false, brightness = null)
+)
+
+@WearPreviewDevices
+@WearPreviewFontScales
+@Composable
+fun PreviewAssistantLight() = FavoritesPreviewHost(ThemeMode.LIGHT) { padding, state, spec ->
+    AssistantScreen(onPhraseClick = {}, onWriteClick = {}, onHomeClick = {}, contentPadding = padding, listState = state, transformationSpec = spec)
+}
+
+@WearPreviewDevices
+@Composable
+fun PreviewAssistantDark() = FavoritesPreviewHost(ThemeMode.DARK) { padding, state, spec ->
+    AssistantScreen(onPhraseClick = {}, onWriteClick = {}, onHomeClick = {}, contentPadding = padding, listState = state, transformationSpec = spec)
+}
+
+@WearPreviewDevices
+@WearPreviewFontScales
+@Composable
+fun PreviewAssistantInputLight() = FavoritesPreviewHost(ThemeMode.LIGHT) { padding, state, spec ->
+    AssistantInputScreen(
+        text = "", onTextChange = {}, onSendClick = {}, onBackClick = {},
+        contentPadding = padding, listState = state, transformationSpec = spec
+    )
+}
+
+@WearPreviewDevices
+@Composable
+fun PreviewAssistantInputDark() = FavoritesPreviewHost(ThemeMode.DARK) { padding, state, spec ->
+    AssistantInputScreen(
+        text = "Apaga el escritorio y la tira", onTextChange = {}, onSendClick = {}, onBackClick = {},
+        contentPadding = padding, listState = state, transformationSpec = spec
+    )
+}
+
+@WearPreviewDevices
+@WearPreviewFontScales
+@Composable
+fun PreviewAssistantConfirmLight() = FavoritesPreviewHost(ThemeMode.LIGHT) { padding, state, spec ->
+    AssistantConfirmScreen(
+        reply = "Listo para leer.", actions = previewAssistantActions, onApplyClick = {}, onCancelClick = {},
+        contentPadding = padding, listState = state, transformationSpec = spec
+    )
+}
+
+@WearPreviewDevices
+@Composable
+fun PreviewAssistantConfirmDark() = FavoritesPreviewHost(ThemeMode.DARK) { padding, state, spec ->
+    AssistantConfirmScreen(
+        reply = "", actions = previewAssistantActions, onApplyClick = {}, onCancelClick = {},
+        contentPadding = padding, listState = state, transformationSpec = spec
+    )
+}
+
+@WearPreviewDevices
+@Composable
+fun PreviewAssistantDoneLight() = FavoritesPreviewHost(ThemeMode.LIGHT) { padding, state, spec ->
+    AssistantDoneScreen(
+        actions = previewAssistantActions, onUndoClick = {}, onHomeClick = {},
+        contentPadding = padding, listState = state, transformationSpec = spec
+    )
+}
+
+@WearPreviewDevices
+@Composable
+fun PreviewAssistantLoadingDark() = FavoritesPreviewHost(ThemeMode.DARK) { padding, state, spec ->
+    AssistantLoadingScreen(onCancelClick = {}, contentPadding = padding, listState = state, transformationSpec = spec)
+}
+
+@WearPreviewDevices
+@WearPreviewFontScales
+@Composable
+fun PreviewAssistantNetworkErrorLight() = FavoritesPreviewHost(ThemeMode.LIGHT) { padding, state, spec ->
+    AssistantErrorScreen(
+        error = AssistantError.NETWORK, reply = "", onRetryClick = {}, onPhrasesClick = {}, onBackClick = {},
+        contentPadding = padding, listState = state, transformationSpec = spec
+    )
+}
+
+@WearPreviewDevices
+@Composable
+fun PreviewAssistantNotConfiguredDark() = FavoritesPreviewHost(ThemeMode.DARK) { padding, state, spec ->
+    AssistantErrorScreen(
+        error = AssistantError.NOT_CONFIGURED, reply = "", onRetryClick = {}, onPhrasesClick = {}, onBackClick = {},
+        contentPadding = padding, listState = state, transformationSpec = spec
+    )
 }

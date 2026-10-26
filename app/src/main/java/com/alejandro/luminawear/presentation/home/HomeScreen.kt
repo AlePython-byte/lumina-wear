@@ -49,6 +49,7 @@ fun HomeScreen(
     onRoomsClick: () -> Unit,
     onScenesClick: () -> Unit = {},
     onFavoritesClick: () -> Unit = {},
+    onAssistantClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     suggestion: Scene? = null,
     onSuggestionClick: () -> Unit = {},
@@ -180,6 +181,7 @@ fun HomeScreen(
         item { SecondaryAccessButton(stringResource(R.string.access_rooms), this, transformationSpec, true, onRoomsClick) }
         item { SecondaryAccessButton(stringResource(R.string.access_scenes), this, transformationSpec, true, onScenesClick) }
         item { SecondaryAccessButton(stringResource(R.string.access_favorites), this, transformationSpec, true, onFavoritesClick) }
+        item { SecondaryAccessButton(stringResource(R.string.access_assistant), this, transformationSpec, true, onAssistantClick) }
         item { SecondaryAccessButton(stringResource(R.string.access_settings), this, transformationSpec, true, onSettingsClick) }
     }
 }

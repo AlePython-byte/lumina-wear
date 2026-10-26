@@ -110,4 +110,42 @@
     <string name="hub_error_body">La luz no respondió.</string>
     <string name="btn_cancel">Cancelar</string>
     <string name="btn_retry">Reintentar</string>
+
+    <string name="access_assistant">Asistente</string>
+    <string name="assistant_quick_header">Frases rápidas</string>
+    <string name="assistant_phrase_off_all">Apagar todo</string>
+    <string name="assistant_phrase_read">Modo lectura</string>
+    <string name="assistant_phrase_relax">Modo descanso</string>
+    <string name="assistant_phrase_lamp_on">Encender la lámpara</string>
+    <string name="assistant_phrase_lamp_50" formatted="false">Lámpara al 50 %</string>
+    <string name="assistant_detail_all_lights">Todas las luces</string>
+    <string name="assistant_write">Escribir</string>
+    <string name="assistant_write_detail">Hasta %1$d caracteres</string>
+    <string name="assistant_input_hint">Ej.: apaga el escritorio</string>
+    <string name="assistant_input_desc">Orden para las luces, máximo %1$d caracteres</string>
+    <string name="assistant_input_counter">%1$d/%2$d</string>
+    <string name="assistant_btn_send">Enviar</string>
+    <string name="assistant_loading_header">Consultando</string>
+    <string name="assistant_loading_title">Entendiendo tu pedido</string>
+    <string name="assistant_confirm_header">Confirmar</string>
+    <string name="assistant_btn_apply">Aplicar</string>
+    <string name="assistant_done_header">Listo</string>
+    <string name="assistant_done_title">Cambios aplicados</string>
+    <string name="assistant_btn_undo_desc">Deshacer los cambios del asistente y restaurar las luces</string>
+    <string name="assistant_action_off_all">Apagar todas las luces</string>
+    <string name="assistant_action_on_all">Encender todas las luces</string>
+    <string name="assistant_action_scene">Escena: %1$s</string>
+    <string name="assistant_action_light_on_percent">Encender %1$s (%2$s) al %3$d %%</string>
+    <string name="assistant_action_light_on">Encender %1$s (%2$s)</string>
+    <string name="assistant_action_light_off">Apagar %1$s (%2$s)</string>
+    <string name="assistant_not_understood_header">No entendí</string>
+    <string name="assistant_not_understood_body">Prueba con otras palabras o usa una frase rápida.</string>
+    <string name="assistant_network_header">Sin conexión</string>
+    <string name="assistant_network_body">No pude consultar al asistente. Las frases rápidas funcionan sin internet.</string>
+    <string name="assistant_server_header">No se pudo</string>
+    <string name="assistant_server_body">El asistente no respondió bien. Prueba de nuevo o usa una frase rápida.</string>
+    <string name="assistant_config_header">Sin configurar</string>
+    <string name="assistant_config_title">Solo frases rápidas</string>
+    <string name="assistant_config_body">El asistente en línea no está configurado. Las frases rápidas sí funcionan.</string>
+    <string name="assistant_btn_phrases">Frases rápidas</string>
 </resources>

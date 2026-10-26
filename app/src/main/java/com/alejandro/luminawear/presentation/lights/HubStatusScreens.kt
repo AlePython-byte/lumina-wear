@@ -69,8 +69,9 @@ fun HubErrorScreen(
     }
 }
 
+/** Plantilla de los estados Conectando / No se pudo; también la usan los estados del asistente. */
 @Composable
-private fun HubStatusScreen(
+internal fun HubStatusScreen(
     header: String,
     title: String,
     body: String,

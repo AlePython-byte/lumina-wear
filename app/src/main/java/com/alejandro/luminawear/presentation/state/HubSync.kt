@@ -31,3 +31,6 @@ const val HUB_ACTION_TURN_OFF_ALL = "turn_off_all"
 const val HUB_ACTION_UNDO = "undo"
 const val HUB_ACTION_RESTORE_DEMO = "restore_demo"
 const val HUB_ACTION_SCENE_PREFIX = "scene:"
+/** Acciones del asistente ya validadas, en el formato de encodeAssistantActions. */
+const val HUB_ACTION_ASSISTANT_PREFIX = "assistant:"
+const val HUB_ACTION_ASSISTANT_UNDO = "assistant_undo"

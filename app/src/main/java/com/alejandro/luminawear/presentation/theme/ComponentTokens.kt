@@ -78,6 +78,20 @@ object NavigationItemTokens {
     val optionPaddingHorizontal: Dp = LuminaSpacing.md
 }
 
+/** Campo de texto del asistente. */
+object TextInputTokens {
+    val container: Color @Composable get() = LuminaTheme.colors.surface
+    val content: Color @Composable get() = LuminaTheme.colors.text
+    val placeholder: Color @Composable get() = LuminaTheme.colors.muted
+    val border: Color @Composable get() = LuminaTheme.colors.border
+    val borderFocused: Color @Composable get() = LuminaTheme.colors.accentContent
+    val cursor: Color @Composable get() = LuminaTheme.colors.accentContent
+    val counter: Color @Composable get() = LuminaTheme.colors.muted
+    val radius: Dp = LuminaRadius.sm
+    val padding: Dp = LuminaSpacing.md
+    val minHeight: Dp = LuminaSizes.touch
+}
+
 object BrightnessDialTokens {
     val arc: Color @Composable get() = LuminaTheme.colors.accentContent
     val track: Color @Composable get() = LuminaTheme.colors.border

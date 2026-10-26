@@ -1,6 +1,19 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+}
+
+// Configuración del asistente desde local.properties (no versionado). Valor "" si falta.
+val localProperties = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+
+fun buildConfigString(key: String): String {
+    val value = localProperties.getProperty(key, "").trim()
+    return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 }
 
 android {
@@ -16,6 +29,8 @@ android {
         versionCode = 1
         versionName = "1.0"
 
+        buildConfigField("String", "ASSISTANT_URL", buildConfigString("assistant.url"))
+        buildConfigField("String", "ASSISTANT_TOKEN", buildConfigString("assistant.token"))
     }
 
     buildTypes {
@@ -32,6 +47,7 @@ android {
     useLibrary("wear-sdk")
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
