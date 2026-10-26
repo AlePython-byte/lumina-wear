@@ -2,6 +2,7 @@ package com.alejandro.luminawear.presentation.assistant
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -16,8 +17,10 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,6 +35,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumnState
+import androidx.wear.compose.foundation.lazy.TransformingLazyColumnVisibleItemInfo
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.TransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
@@ -281,6 +285,56 @@ fun AssistantErrorScreen(
     }
 }
 
+/** Parte baja del área visible (fracción del alto) a partir de la cual el borde redondo recorta un botón. */
+private const val APPLY_MAX_BOTTOM_FRACTION = 0.86f
+
+/**
+ * Hasta dónde puede llegar por arriba el elemento del título al salir de la vista (fracción del alto).
+ * El elemento tiene espacio vacío debajo del texto: con este valor el texto ya no se ve bajo la hora,
+ * pero la lista no baja de más y deja el resumen respirar bajo ella.
+ */
+private const val HEADER_HIDDEN_FRACTION = 0.05f
+
+/** Medidas que se hacen como máximo al colocar Aplicar (cada una baja la lista y vuelve a medir). */
+private const val APPLY_MAX_ADJUSTMENTS = 4
+
+/** Borde inferior de un elemento, en píxeles, antes de que la transformación lo encoja junto al borde. */
+private fun TransformingLazyColumnVisibleItemInfo.bottomPx(viewportHeight: Float): Float {
+    val fraction = scrollProgress.bottomOffsetFraction
+    return if (fraction.isNaN()) (offset + measuredHeight).toFloat() else fraction * viewportHeight
+}
+
+/**
+ * Empieza arriba y, si Aplicar no queda completo dentro del área visible (muchas acciones, nombres
+ * largos o una respuesta larga), baja la lista para que quepa. Al bajar, el texto del título sale de
+ * la vista: no se deja a medias detrás de la hora. Si Aplicar ya cabe, no mueve nada.
+ */
+private suspend fun TransformingLazyColumnState.startWithApplyVisible(applyIndex: Int) {
+    scrollToItem(0)
+    var moved = false
+    repeat(APPLY_MAX_ADJUSTMENTS) {
+        // Se espera a que la lista mida con la posición actual antes de consultar dónde cae cada cosa.
+        withFrameNanos { }
+        withFrameNanos { }
+        val viewportHeight = layoutInfo.viewportSize.height.toFloat()
+        if (viewportHeight <= 0f) return
+        val items = layoutInfo.visibleItems
+        val applyBottom = items.firstOrNull { it.index == applyIndex }?.bottomPx(viewportHeight)
+        val overflow = applyBottom?.minus(viewportHeight * APPLY_MAX_BOTTOM_FRACTION)
+        // Cuánto falta para que el título (primer elemento) salga entero por arriba; 0 si ya salió.
+        val headerHide = (items.firstOrNull { it.index == 0 }?.bottomPx(viewportHeight)
+            ?.minus(viewportHeight * HEADER_HIDDEN_FRACTION) ?: 0f).coerceAtLeast(0f)
+        val delta = when {
+            overflow == null -> viewportHeight / 2f // aún no se ve (muy abajo): se baja y se vuelve a medir
+            overflow > 0f -> maxOf(overflow, headerHide)
+            moved && headerHide > 0f -> headerHide // ya se bajó: que el título no quede asomando
+            else -> return // cabe sin mover nada
+        }
+        scrollBy(delta)
+        moved = true
+    }
+}
+
 /** Resumen de lo que se va a hacer, con Aplicar y Cancelar. */
 @Composable
 fun AssistantConfirmScreen(
@@ -292,6 +346,9 @@ fun AssistantConfirmScreen(
     listState: TransformingLazyColumnState,
     transformationSpec: TransformationSpec
 ) {
+    // Orden de los elementos: encabezado, respuesta (si hay), una línea por acción, Aplicar, Cancelar.
+    val applyIndex = 1 + (if (reply.isNotBlank()) 1 else 0) + actions.size
+    LaunchedEffect(applyIndex) { listState.startWithApplyVisible(applyIndex) }
     TransformingLazyColumn(
         contentPadding = contentPadding,
         state = listState,
