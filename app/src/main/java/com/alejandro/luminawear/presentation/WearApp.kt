@@ -1656,3 +1656,16 @@ fun PreviewStartPointLight() = FavoritesPreviewHost(ThemeMode.LIGHT) { padding, 
 fun PreviewStartPointDark() = FavoritesPreviewHost(ThemeMode.DARK) { padding, state, spec ->
     StartPointScreen(onDemoClick = {}, onEmptyClick = {}, contentPadding = padding, listState = state, transformationSpec = spec)
 }
+
+@WearPreviewDevices
+@WearPreviewFontScales
+@Composable
+fun PreviewHomeEmptyLight() = FavoritesPreviewHost(ThemeMode.LIGHT) { padding, state, spec ->
+    HomeScreen(lightsOn = 0, totalLights = 0, onTurnOffAllClick = {}, onRoomsClick = {}, contentPadding = padding, listState = state, transformationSpec = spec)
+}
+
+@WearPreviewDevices
+@Composable
+fun PreviewHomeEmptyDark() = FavoritesPreviewHost(ThemeMode.DARK) { padding, state, spec ->
+    HomeScreen(lightsOn = 0, totalLights = 0, onTurnOffAllClick = {}, onRoomsClick = {}, contentPadding = padding, listState = state, transformationSpec = spec)
+}
