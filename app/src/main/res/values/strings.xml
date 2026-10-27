@@ -27,6 +27,8 @@
     <string name="light_armario">Armario</string>
     <string name="light_escritorio">Escritorio</string>
     <string name="light_ambiente">Luz ambiente</string>
+    <!-- Nombre de una luz repetida en la misma habitación: "Plafón 2". -->
+    <string name="light_name_numbered">%1$s %2$d</string>
 
     <string name="light_state_on_percent">Encendida · %1$d %%</string>
     <string name="light_state_off">Apagada</string>
@@ -149,5 +151,8 @@
     <string name="assistant_config_header">Sin configurar</string>
     <string name="assistant_config_title">Solo frases rápidas</string>
     <string name="assistant_config_body">El asistente en línea no está configurado. Las frases rápidas sí funcionan.</string>
+    <string name="assistant_no_lights_header">Sin luces</string>
+    <string name="assistant_no_lights_title">Nada que controlar</string>
+    <string name="assistant_no_lights_body">Todavía no hay luces en la casa.</string>
     <string name="assistant_btn_phrases">Frases rápidas</string>
 </resources>
