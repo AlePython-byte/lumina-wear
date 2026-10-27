@@ -40,11 +40,11 @@ import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.TransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
 import com.alejandro.luminawear.R
-import com.alejandro.luminawear.data.HUB_LIGHT_ID
 import com.alejandro.luminawear.presentation.components.ActionButton
 import com.alejandro.luminawear.presentation.components.NavigationItem
 import com.alejandro.luminawear.presentation.lights.HubStatusScreen
-import com.alejandro.luminawear.presentation.models.appLights
+import com.alejandro.luminawear.presentation.models.Light
+import com.alejandro.luminawear.presentation.models.lightName
 import com.alejandro.luminawear.presentation.models.appRooms
 import com.alejandro.luminawear.presentation.models.sceneById
 import com.alejandro.luminawear.presentation.scenes.CenteredText
@@ -59,9 +59,13 @@ import com.alejandro.luminawear.presentation.theme.LuminaTheme
 import com.alejandro.luminawear.presentation.theme.LuminaTypography
 import com.alejandro.luminawear.presentation.theme.TextInputTokens
 
-/** Frases rápidas y acceso a "Escribir". Cada frase pasa por las mismas reglas que el texto escrito. */
+/**
+ * Frases rápidas y acceso a "Escribir". Cada frase pasa por las mismas reglas que el texto escrito.
+ * Sin luz del hub (`hubLight == null`) no se ofrecen las dos frases de la Lámpara.
+ */
 @Composable
 fun AssistantScreen(
+    hubLight: Light?,
     onPhraseClick: (String) -> Unit,
     onWriteClick: () -> Unit,
     onHomeClick: () -> Unit,
@@ -69,15 +73,16 @@ fun AssistantScreen(
     listState: TransformingLazyColumnState,
     transformationSpec: TransformationSpec
 ) {
-    val lamp = appLights.first { it.id == HUB_LIGHT_ID }
-    val lampRoom = stringResource(appRooms.first { it.id == lamp.roomId }.nameRes)
-    val phrases = listOf(
-        stringResource(R.string.assistant_phrase_off_all) to stringResource(R.string.assistant_detail_all_lights),
-        stringResource(R.string.assistant_phrase_read) to sceneRoomPercentSpaced(sceneById("read")!!),
-        stringResource(R.string.assistant_phrase_relax) to sceneRoomPercentSpaced(sceneById("relax")!!),
-        stringResource(R.string.assistant_phrase_lamp_on) to stringResource(R.string.light_control_title, stringResource(lamp.nameRes), lampRoom),
-        stringResource(R.string.assistant_phrase_lamp_50) to stringResource(R.string.card_room_percent, lampRoom, 50)
-    )
+    val phrases = buildList {
+        add(stringResource(R.string.assistant_phrase_off_all) to stringResource(R.string.assistant_detail_all_lights))
+        add(stringResource(R.string.assistant_phrase_read) to sceneRoomPercentSpaced(sceneById("read")!!))
+        add(stringResource(R.string.assistant_phrase_relax) to sceneRoomPercentSpaced(sceneById("relax")!!))
+        if (hubLight != null) {
+            val lampRoom = appRooms.firstOrNull { it.id == hubLight.roomId }?.let { stringResource(it.nameRes) }.orEmpty()
+            add(stringResource(R.string.assistant_phrase_lamp_on) to stringResource(R.string.light_control_title, lightName(hubLight), lampRoom))
+            add(stringResource(R.string.assistant_phrase_lamp_50) to stringResource(R.string.card_room_percent, lampRoom, 50))
+        }
+    }
     TransformingLazyColumn(
         contentPadding = contentPadding,
         state = listState,
@@ -251,13 +256,19 @@ fun AssistantErrorScreen(
         AssistantError.NETWORK -> R.string.assistant_network_header
         AssistantError.SERVER -> R.string.assistant_server_header
         AssistantError.NOT_CONFIGURED -> R.string.assistant_config_header
+        AssistantError.NO_LIGHTS -> R.string.assistant_no_lights_header
     }
-    val title = if (error == AssistantError.NOT_CONFIGURED) R.string.assistant_config_title else R.string.hub_error_title
+    val title = when (error) {
+        AssistantError.NOT_CONFIGURED -> R.string.assistant_config_title
+        AssistantError.NO_LIGHTS -> R.string.assistant_no_lights_title
+        else -> R.string.hub_error_title
+    }
     val defaultBody = when (error) {
         AssistantError.NOT_UNDERSTOOD -> R.string.assistant_not_understood_body
         AssistantError.NETWORK -> R.string.assistant_network_body
         AssistantError.SERVER -> R.string.assistant_server_body
         AssistantError.NOT_CONFIGURED -> R.string.assistant_config_body
+        AssistantError.NO_LIGHTS -> R.string.assistant_no_lights_body
     }
     // Si el asistente explicó por qué no entendió, se muestra su respuesta.
     val body = if (error == AssistantError.NOT_UNDERSTOOD && reply.isNotBlank()) reply else stringResource(defaultBody)
@@ -340,6 +351,7 @@ private suspend fun TransformingLazyColumnState.startWithApplyVisible(applyIndex
 fun AssistantConfirmScreen(
     reply: String,
     actions: List<AssistantAction>,
+    lights: List<Light>,
     onApplyClick: () -> Unit,
     onCancelClick: () -> Unit,
     contentPadding: PaddingValues,
@@ -368,7 +380,7 @@ fun AssistantConfirmScreen(
             item { CenteredText(reply, this, transformationSpec, LuminaTypography.body, LuminaTheme.colors.accentContent) }
         }
         actions.forEach { action ->
-            item { CenteredText(assistantActionText(action), this, transformationSpec, LuminaTypography.button, LuminaTheme.colors.text) }
+            item { CenteredText(assistantActionText(action, lights), this, transformationSpec, LuminaTypography.button, LuminaTheme.colors.text) }
         }
         item { ActionButton(stringResource(R.string.assistant_btn_apply), this, transformationSpec, onApplyClick) }
         item { ActionButton(stringResource(R.string.btn_cancel), this, transformationSpec, onCancelClick, secondary = true) }
@@ -379,6 +391,7 @@ fun AssistantConfirmScreen(
 @Composable
 fun AssistantDoneScreen(
     actions: List<AssistantAction>,
+    lights: List<Light>,
     onUndoClick: () -> Unit,
     onHomeClick: () -> Unit,
     contentPadding: PaddingValues,
@@ -407,7 +420,7 @@ fun AssistantDoneScreen(
             )
         }
         actions.forEach { action ->
-            item { CenteredText(assistantActionText(action), this, transformationSpec, LuminaTypography.body, LuminaTheme.colors.muted) }
+            item { CenteredText(assistantActionText(action, lights), this, transformationSpec, LuminaTypography.body, LuminaTheme.colors.muted) }
         }
         item {
             ActionButton(
@@ -425,7 +438,7 @@ fun AssistantDoneScreen(
 
 /** Texto legible de una acción ya validada ("Encender Lámpara (Sala) al 50 %"). */
 @Composable
-fun assistantActionText(action: AssistantAction): String = when (action) {
+fun assistantActionText(action: AssistantAction, lights: List<Light>): String = when (action) {
     AssistantAction.TurnOffAll -> stringResource(R.string.assistant_action_off_all)
     AssistantAction.TurnOnAll -> stringResource(R.string.assistant_action_on_all)
     is AssistantAction.ApplyScene -> {
@@ -433,8 +446,8 @@ fun assistantActionText(action: AssistantAction): String = when (action) {
         stringResource(R.string.assistant_action_scene, if (scene != null) stringResource(scene.nameRes) else action.id)
     }
     is AssistantAction.SetLight -> {
-        val light = appLights.firstOrNull { it.id == action.id }
-        val name = if (light != null) stringResource(light.nameRes) else action.id
+        val light = lights.firstOrNull { it.id == action.id }
+        val name = if (light != null) lightName(light) else action.id
         val room = appRooms.firstOrNull { it.id == light?.roomId }?.let { stringResource(it.nameRes) }.orEmpty()
         val brightness = action.brightness
         when {
