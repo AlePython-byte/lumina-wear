@@ -318,11 +318,19 @@ fun WearApp(
         currentScreen = ScreenType.HOME.name
     }
 
-    fun activateScene(scene: Scene) = runHubAction(HUB_ACTION_SCENE_PREFIX + scene.id) {
-        undoSnapshot = serializeLightStates(lightStateHolder.toMap())
-        lightStateHolder.applyScene(scene)
-        selectedSceneId = scene.id
-        currentScreen = ScreenType.SCENE_ACTIVE.name
+    fun activateScene(scene: Scene) {
+        // Sin luces sobre las que actuar no se aplica nada: el detalle muestra "Sin luces en …".
+        if (lightStateHolder.isSceneWithoutLights(scene)) {
+            selectedSceneId = scene.id
+            currentScreen = ScreenType.SCENE_DETAIL.name
+            return
+        }
+        runHubAction(HUB_ACTION_SCENE_PREFIX + scene.id) {
+            undoSnapshot = serializeLightStates(lightStateHolder.toMap())
+            lightStateHolder.applyScene(scene)
+            selectedSceneId = scene.id
+            currentScreen = ScreenType.SCENE_ACTIVE.name
+        }
     }
 
     fun undoScene() = runHubAction(HUB_ACTION_UNDO) {
@@ -691,7 +699,8 @@ fun WearApp(
                                     },
                                     contentPadding = contentPadding,
                                     listState = listState,
-                                    transformationSpec = transformationSpec
+                                    transformationSpec = transformationSpec,
+                                    withoutLights = lightStateHolder.isSceneWithoutLights(scene)
                                 )
                             }
                         }

@@ -78,6 +78,22 @@ fun RoomDetailScreen(
             }
         }
 
+        // Habitación vacía: el mismo mensaje que en la lista y Volver.
+        if (lights.isEmpty()) {
+            item {
+                Text(
+                    text = stringResource(R.string.room_no_lights),
+                    style = LuminaTypography.title,
+                    color = LuminaTheme.colors.accentContent,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = LuminaSpacing.sm)
+                        .transformedHeight(this, transformationSpec)
+                )
+            }
+        }
+
         items(lights.size) { index ->
             val light = lights[index]
             val state = lightStateHolder.states[light.id]
@@ -132,7 +148,7 @@ fun RoomDetailScreen(
                 transformation = SurfaceTransformation(transformationSpec)
             ) {
                 Text(
-                    text = stringResource(R.string.access_rooms),
+                    text = stringResource(if (lights.isEmpty()) R.string.btn_back else R.string.access_rooms),
                     style = LuminaTypography.button
                 )
             }

@@ -164,5 +164,9 @@
     <string name="start_point_empty_detail">Add your lights</string>
     <string name="home_empty_title">No lights yet.</string>
     <string name="home_empty_body">You’ll be able to add the first one soon.</string>
+    <string name="room_no_lights">No lights</string>
+    <string name="scene_no_lights_room">No lights in %1$s.</string>
+    <string name="scene_no_lights_home">No lights at home.</string>
+    <string name="scene_no_lights_body">Add one to use this scene.</string>
     <string name="assistant_btn_phrases">Quick phrases</string>
 </resources>
