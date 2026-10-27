@@ -98,7 +98,8 @@ fun RoomsScreen(
                     )
                     Spacer(modifier = Modifier.height(LuminaSpacing.xs))
                     Text(
-                        text = stringResource(R.string.room_lights_counter, onCount, totalCount),
+                        text = if (totalCount == 0) stringResource(R.string.room_no_lights)
+                               else stringResource(R.string.room_lights_counter, onCount, totalCount),
                         style = LuminaTypography.time,
                         color = RoomControlTokens.subtitle
                     )

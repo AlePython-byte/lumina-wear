@@ -1,5 +1,6 @@
 package com.alejandro.luminawear.presentation.state
 
+import com.alejandro.luminawear.presentation.models.Light
 import com.alejandro.luminawear.presentation.models.appScenes
 
 /** Acción del asistente. Las reglas locales y el servidor producen la misma forma. */
@@ -12,11 +13,21 @@ sealed interface AssistantAction {
     data object TurnOnAll : AssistantAction
 }
 
-/** Luz tal como se describe al servidor (nombre y habitación en el idioma de la app). */
-data class AssistantLight(val id: String, val name: String, val room: String, val on: Boolean, val brightness: Int)
+/**
+ * Luz tal como se describe al servidor (nombre y habitación en el idioma de la app). `aliases` solo
+ * lo usan las reglas locales (otros nombres del tipo, ya normalizados) y no se envía.
+ */
+data class AssistantLight(
+    val id: String,
+    val name: String,
+    val room: String,
+    val on: Boolean,
+    val brightness: Int,
+    val aliases: List<String> = emptyList()
+)
 
-/** Por qué el asistente no propone acciones. */
-enum class AssistantError { NOT_UNDERSTOOD, NETWORK, SERVER, NOT_CONFIGURED }
+/** Por qué el asistente no propone acciones. NO_LIGHTS: no hay ninguna luz (no se consulta al servidor). */
+enum class AssistantError { NOT_UNDERSTOOD, NETWORK, SERVER, NOT_CONFIGURED, NO_LIGHTS }
 
 const val ASSISTANT_MAX_ACTIONS = 5
 const val ASSISTANT_MAX_TEXT = 200
@@ -46,7 +57,8 @@ fun validateAssistantActions(
  */
 fun applyAssistantActions(
     states: Map<String, LightState>,
-    actions: List<AssistantAction>
+    actions: List<AssistantAction>,
+    lights: List<Light>
 ): Map<String, LightState> {
     var result = states
     actions.forEach { action ->
@@ -63,7 +75,7 @@ fun applyAssistantActions(
             }
             is AssistantAction.ApplyScene -> {
                 val scene = appScenes.firstOrNull { it.id == action.id } ?: return@forEach
-                applyScene(result, scene)
+                applyScene(result, scene, lights)
             }
             AssistantAction.TurnOffAll -> result.mapValues { it.value.copy(isOn = false) }
             AssistantAction.TurnOnAll -> result.mapValues { it.value.copy(isOn = true) }

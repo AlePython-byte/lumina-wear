@@ -33,7 +33,9 @@ import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.TransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
 import com.alejandro.luminawear.R
+import com.alejandro.luminawear.presentation.components.ActionButton
 import com.alejandro.luminawear.presentation.models.Scene
+import com.alejandro.luminawear.presentation.scenes.CenteredText
 import com.alejandro.luminawear.presentation.scenes.sceneRoomPercentSpaced
 import com.alejandro.luminawear.presentation.theme.ActionButtonTokens
 import com.alejandro.luminawear.presentation.theme.LuminaBorder
@@ -43,6 +45,10 @@ import com.alejandro.luminawear.presentation.theme.LuminaTypography
 import com.alejandro.luminawear.presentation.theme.NavigationItemTokens
 import com.alejandro.luminawear.presentation.theme.SceneCardTokens
 
+/**
+ * Inicio. Con luces: contador, Apagar todo, sugerencia y accesos. Sin luces: estado vacío con Ajustes
+ * y los accesos que siguen teniendo sentido (Habitaciones, Favoritos, Asistente).
+ */
 @Composable
 fun HomeScreen(
     lightsOn: Int,
@@ -64,6 +70,7 @@ fun HomeScreen(
         state = listState,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        val isEmpty = totalLights == 0
         item {
             ListHeader(
                 modifier = Modifier
@@ -72,12 +79,15 @@ fun HomeScreen(
                 transformation = SurfaceTransformation(transformationSpec)
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = stringResource(R.string.header_demo),
-                        style = LuminaTypography.label,
-                        color = LuminaTheme.colors.accentContent,
-                        textAlign = TextAlign.Center
-                    )
+                    // Sin luces no hay casa demo que señalar.
+                    if (!isEmpty) {
+                        Text(
+                            text = stringResource(R.string.header_demo),
+                            style = LuminaTypography.label,
+                            color = LuminaTheme.colors.accentContent,
+                            textAlign = TextAlign.Center
+                        )
+                    }
                     Text(
                         text = stringResource(R.string.header_my_home),
                         style = LuminaTypography.button,
@@ -86,6 +96,27 @@ fun HomeScreen(
                     )
                 }
             }
+        }
+        if (isEmpty) {
+            item {
+                CenteredText(
+                    stringResource(R.string.home_empty_title), this, transformationSpec,
+                    LuminaTypography.title, LuminaTheme.colors.accentContent
+                )
+            }
+            item {
+                CenteredText(
+                    stringResource(R.string.home_empty_body), this, transformationSpec,
+                    LuminaTypography.body, LuminaTheme.colors.muted
+                )
+            }
+            item {
+                ActionButton(stringResource(R.string.access_settings), this, transformationSpec, onSettingsClick, secondary = true)
+            }
+            item { SecondaryAccessButton(stringResource(R.string.access_rooms), this, transformationSpec, true, onRoomsClick) }
+            item { SecondaryAccessButton(stringResource(R.string.access_favorites), this, transformationSpec, true, onFavoritesClick) }
+            item { SecondaryAccessButton(stringResource(R.string.access_assistant), this, transformationSpec, true, onAssistantClick) }
+            return@TransformingLazyColumn
         }
         item {
             val subtitle = pluralStringResource(R.plurals.lights_on_subtitle, lightsOn)

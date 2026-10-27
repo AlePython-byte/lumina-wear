@@ -24,6 +24,7 @@ import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.TransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
 import com.alejandro.luminawear.R
+import com.alejandro.luminawear.presentation.components.ActionButton
 import com.alejandro.luminawear.presentation.components.NavigationItem
 import com.alejandro.luminawear.presentation.state.AppLanguage
 import com.alejandro.luminawear.presentation.theme.ActionButtonTokens
@@ -40,6 +41,7 @@ fun SettingsScreen(
     language: AppLanguage,
     onThemeModeChange: (ThemeMode) -> Unit,
     onLanguageChange: (AppLanguage) -> Unit,
+    onStartOverClick: () -> Unit,
     onHomeClick: () -> Unit,
     contentPadding: PaddingValues,
     listState: TransformingLazyColumnState,
@@ -136,6 +138,9 @@ fun SettingsScreen(
                 transformationSpec = transformationSpec,
                 onClick = { if (language != AppLanguage.EN) onLanguageChange(AppLanguage.EN) }
             )
+        }
+        item {
+            ActionButton(stringResource(R.string.settings_start_over), this, transformationSpec, onStartOverClick, secondary = true)
         }
         item {
             Button(

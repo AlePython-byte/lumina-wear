@@ -27,6 +27,8 @@ import androidx.wear.compose.material3.lazy.TransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
 import com.alejandro.luminawear.R
 import com.alejandro.luminawear.presentation.models.Light
+import com.alejandro.luminawear.presentation.models.lightName
+import com.alejandro.luminawear.presentation.state.DEFAULT_REMEMBERED_BRIGHTNESS
 import com.alejandro.luminawear.presentation.state.LightStateHolder
 import com.alejandro.luminawear.presentation.theme.ActionButtonTokens
 import com.alejandro.luminawear.presentation.theme.LuminaBorder
@@ -76,11 +78,27 @@ fun RoomDetailScreen(
             }
         }
 
+        // Habitación vacía: el mismo mensaje que en la lista y Volver.
+        if (lights.isEmpty()) {
+            item {
+                Text(
+                    text = stringResource(R.string.room_no_lights),
+                    style = LuminaTypography.title,
+                    color = LuminaTheme.colors.accentContent,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = LuminaSpacing.sm)
+                        .transformedHeight(this, transformationSpec)
+                )
+            }
+        }
+
         items(lights.size) { index ->
             val light = lights[index]
             val state = lightStateHolder.states[light.id]
             val isOn = state?.isOn == true
-            val brightness = state?.brightness ?: light.defaultBrightness
+            val brightness = state?.brightness ?: DEFAULT_REMEMBERED_BRIGHTNESS
 
             Card(
                 onClick = { onLightClick(light.id) },
@@ -98,7 +116,7 @@ fun RoomDetailScreen(
             ) {
                 Column(modifier = Modifier.padding(RoomControlTokens.padding)) {
                     Text(
-                        text = stringResource(light.nameRes),
+                        text = lightName(light),
                         style = LuminaTypography.button,
                         color = RoomControlTokens.title
                     )
@@ -130,7 +148,7 @@ fun RoomDetailScreen(
                 transformation = SurfaceTransformation(transformationSpec)
             ) {
                 Text(
-                    text = stringResource(R.string.access_rooms),
+                    text = stringResource(if (lights.isEmpty()) R.string.btn_back else R.string.access_rooms),
                     style = LuminaTypography.button
                 )
             }

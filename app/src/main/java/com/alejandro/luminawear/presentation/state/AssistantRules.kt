@@ -35,17 +35,22 @@ private val SCENE_WORDS = mapOf(
     "sleep" to listOf("buenas noches", "dormir", "sleep", "good night", "goodnight", "bedtime")
 )
 
-/** Nombres de cada luz en español e inglés (ya normalizados), además del nombre visible. */
-private val LIGHT_ALIASES = mapOf(
-    "living_plafon" to listOf("plafon", "ceiling light"),
-    "living_lampara" to listOf("lampara", "lamp"),
-    "living_tira" to listOf("tira led", "tira", "led strip", "strip"),
-    "bed_techo" to listOf("techo", "ceiling"),
-    "bed_mesa" to listOf("mesa de noche", "mesita", "nightstand", "bedside lamp"),
-    "bed_armario" to listOf("armario", "closet", "wardrobe"),
-    "study_escritorio" to listOf("escritorio", "desk", "desk lamp"),
-    "study_ambiente" to listOf("luz ambiente", "ambiente", "ambient light", "ambient")
+/** Nombres de cada tipo de luz en español e inglés (ya normalizados), además del nombre visible. */
+private val LIGHT_TYPE_ALIASES = mapOf(
+    "plafon" to listOf("plafon", "ceiling light"),
+    "lampara" to listOf("lampara", "lamp"),
+    "hub_lamp" to listOf("lampara", "lamp"),
+    "tira" to listOf("tira led", "tira", "led strip", "strip"),
+    "techo" to listOf("techo", "ceiling"),
+    "mesa" to listOf("mesa de noche", "mesita", "nightstand", "bedside lamp"),
+    "armario" to listOf("armario", "closet", "wardrobe"),
+    "escritorio" to listOf("escritorio", "desk", "desk lamp"),
+    "ambiente" to listOf("luz ambiente", "ambiente", "ambient light", "ambient")
 )
+
+/** Otros nombres de una luz según su tipo; con número ("Plafón 2") cada alias lleva el número. */
+fun lightAliases(typeKey: String, number: Int): List<String> =
+    LIGHT_TYPE_ALIASES[typeKey].orEmpty().map { if (number > 1) "$it $number" else it }
 
 private val PERCENT_PATTERN = Regex("""(\d{1,3}) (%|por ciento|porciento|percent)(?: |$)""")
 private val TO_NUMBER_PATTERN = Regex("""(?:^| )(?:al|a|to|at) (\d{1,3})(?: |$)""")
@@ -105,7 +110,7 @@ private fun findPercent(normalized: String): Int? {
 /** Luces nombradas, en orden de aparición. El nombre más largo gana ("ceiling light" antes que "ceiling"). */
 private fun findLights(padded: String, lights: List<AssistantLight>): List<String> {
     val aliases = lights.flatMap { light ->
-        (LIGHT_ALIASES[light.id].orEmpty() + normalizeAssistantText(light.name))
+        (light.aliases + normalizeAssistantText(light.name))
             .filter { it.isNotEmpty() }
             .map { alias -> alias to light.id }
     }.sortedByDescending { it.first.length }

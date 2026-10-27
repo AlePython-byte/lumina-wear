@@ -27,6 +27,8 @@
     <string name="light_armario">Closet</string>
     <string name="light_escritorio">Desk</string>
     <string name="light_ambiente">Ambient light</string>
+    <!-- Name of a repeated light in the same room: "Ceiling light 2". -->
+    <string name="light_name_numbered">%1$s %2$d</string>
 
     <string name="light_state_on_percent">On · %1$d%%</string>
     <string name="light_state_off">Off</string>
@@ -54,7 +56,7 @@
     <string name="scene_relax_desc">Soft light to wind down the day.</string>
     <string name="scene_read_desc">Comfortable light for reading in bed.</string>
     <string name="scene_focus_desc">Bright light to work without distractions.</string>
-    <string name="scene_sleep_desc">Turns off all eight lights.</string>
+    <string name="scene_sleep_desc">Turns off all the lights.</string>
     <string name="scene_room_all">Whole house</string>
     <string name="scene_all_off">All off</string>
     <string name="scene_room_percent_tight">%1$s · %2$d%%</string>
@@ -90,7 +92,6 @@
 
     <string name="btn_edit">Edit</string>
     <string name="btn_back">Back</string>
-    <string name="btn_restore_demo">Restore demo</string>
     <string name="fav_edit_title">Edit favorites</string>
     <string name="fav_saved_title">Saved shortcuts</string>
     <string name="fav_detail_light">%1$s · brightness</string>
@@ -147,5 +148,29 @@
     <string name="assistant_config_header">Not set up</string>
     <string name="assistant_config_title">Quick phrases only</string>
     <string name="assistant_config_body">The online assistant isn’t set up. Quick phrases still work.</string>
+    <string name="assistant_no_lights_header">No lights</string>
+    <string name="assistant_no_lights_title">Nothing to control</string>
+    <string name="assistant_no_lights_body">There are no lights in the home yet.</string>
+
+    <!-- First use -->
+    <string name="welcome_title">Your home, on your wrist.</string>
+    <string name="welcome_body">Turn on and adjust your lights from here.</string>
+    <string name="welcome_btn_start">Start</string>
+    <string name="start_point_header">Start point</string>
+    <string name="start_point_demo">Demo home</string>
+    <string name="start_point_demo_detail">8 sample lights</string>
+    <string name="start_point_empty">Start from scratch</string>
+    <string name="start_point_empty_detail">Add your lights</string>
+    <string name="home_empty_title">No lights yet.</string>
+    <string name="home_empty_body">You’ll be able to add the first one soon.</string>
+    <string name="room_no_lights">No lights</string>
+    <string name="scene_no_lights_room">No lights in %1$s.</string>
+    <string name="scene_no_lights_home">No lights at home.</string>
+    <string name="scene_no_lights_body">Add one to use this scene.</string>
+    <string name="settings_start_over">Start over</string>
+    <string name="start_over_header">Start over</string>
+    <string name="start_over_title">Start over?</string>
+    <string name="start_over_body">Your lights and favorites will be erased.</string>
+    <string name="start_over_btn_confirm">Erase and start</string>
     <string name="assistant_btn_phrases">Quick phrases</string>
 </resources>

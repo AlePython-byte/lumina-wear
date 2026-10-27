@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -46,7 +47,11 @@ import com.alejandro.luminawear.presentation.home.HomeScreen
 import com.alejandro.luminawear.presentation.lights.HubConnectingScreen
 import com.alejandro.luminawear.presentation.lights.HubErrorScreen
 import com.alejandro.luminawear.presentation.lights.LightControlScreen
-import com.alejandro.luminawear.presentation.models.appLights
+import com.alejandro.luminawear.presentation.models.demoLights
+import com.alejandro.luminawear.presentation.onboarding.StartOverScreen
+import com.alejandro.luminawear.presentation.onboarding.StartPointScreen
+import com.alejandro.luminawear.presentation.onboarding.WelcomeScreen
+import com.alejandro.luminawear.presentation.models.lightName
 import com.alejandro.luminawear.presentation.models.Scene
 import com.alejandro.luminawear.presentation.models.appRooms
 import com.alejandro.luminawear.presentation.models.sceneById
@@ -74,7 +79,6 @@ import com.alejandro.luminawear.presentation.state.DEFAULT_FAVORITES
 import com.alejandro.luminawear.presentation.state.HUB_ACTION_ASSISTANT_PREFIX
 import com.alejandro.luminawear.presentation.state.HUB_ACTION_ASSISTANT_UNDO
 import com.alejandro.luminawear.presentation.state.FAVORITE_PLAFON_ID
-import com.alejandro.luminawear.presentation.state.HUB_ACTION_RESTORE_DEMO
 import com.alejandro.luminawear.presentation.state.HUB_ACTION_SCENE_PREFIX
 import com.alejandro.luminawear.presentation.state.HUB_ACTION_TURN_OFF_ALL
 import com.alejandro.luminawear.presentation.state.HUB_ACTION_UNDO
@@ -85,6 +89,10 @@ import com.alejandro.luminawear.presentation.state.decodeLightState
 import com.alejandro.luminawear.presentation.state.encodeLightState
 import com.alejandro.luminawear.presentation.state.Favorite
 import com.alejandro.luminawear.presentation.state.defaultLightStates
+import com.alejandro.luminawear.presentation.state.DEFAULT_REMEMBERED_BRIGHTNESS
+import com.alejandro.luminawear.presentation.state.DEMO_LIGHTS_CONFIG
+import com.alejandro.luminawear.presentation.state.LightsConfig
+import com.alejandro.luminawear.presentation.state.lightAliases
 import com.alejandro.luminawear.presentation.state.parseFavoriteIds
 import com.alejandro.luminawear.presentation.state.resolveFavorites
 import com.alejandro.luminawear.presentation.state.serializeFavoriteIds
@@ -116,7 +124,8 @@ private val START_AT_TOP_KEYS = setOf(
 
 enum class ScreenType {
     HOME, ROOMS, ROOM_DETAIL, LIGHT_CONTROL, SETTINGS, SCENES, SCENE_DETAIL, SCENE_ACTIVE, SUGGESTION, FAVORITES, FAVORITES_EDIT,
-    ASSISTANT, ASSISTANT_INPUT, ASSISTANT_LOADING, ASSISTANT_CONFIRM, ASSISTANT_DONE, ASSISTANT_ERROR
+    ASSISTANT, ASSISTANT_INPUT, ASSISTANT_LOADING, ASSISTANT_CONFIRM, ASSISTANT_DONE, ASSISTANT_ERROR,
+    WELCOME, START_POINT, START_OVER
 }
 
 @Composable
@@ -127,14 +136,26 @@ fun WearApp(
     onLanguageChange: (AppLanguage) -> Unit = {},
     initialFavorites: String = DEFAULT_FAVORITES,
     onFavoritesChange: (String) -> Unit = {},
-    hubUrl: String = DEFAULT_HUB_URL
+    hubUrl: String = DEFAULT_HUB_URL,
+    initialLights: LightsConfig = DEMO_LIGHTS_CONFIG,
+    onLightsChange: (LightsConfig) -> Unit = {},
+    onboardingDone: Boolean = true,
+    onOnboardingDoneChange: (Boolean) -> Unit = {}
 ) {
-    val lightStateHolder = rememberLightStateHolder()
+    val lightStateHolder = rememberLightStateHolder(initialLights, onLightsChange)
+    // Luces que existen ahora, para dibujar. Las funciones de abajo leen lightStateHolder.lights: una
+    // lambda guardada (efecto, callback) vería la lista de la composición en que se creó.
+    val lights = lightStateHolder.lights
 
-    val totalLights = appLights.size
+    val totalLights = lights.size
     val totalLightsOn = lightStateHolder.states.count { it.value.isOn }
 
-    var currentScreen by rememberSaveable { mutableStateOf(ScreenType.HOME.name) }
+    // Sin primer uso completado se empieza en la bienvenida.
+    var currentScreen by rememberSaveable {
+        mutableStateOf(if (onboardingDone) ScreenType.HOME.name else ScreenType.WELCOME.name)
+    }
+    // Sube al elegir punto de partida o volver a empezar; reinicia el desplazamiento guardado de cada pantalla.
+    var houseGeneration by rememberSaveable { mutableStateOf(0) }
     var selectedRoomId by rememberSaveable { mutableStateOf("") }
     var selectedLightId by rememberSaveable { mutableStateOf("") }
     // Único dueño del tema; MainActivity entrega el valor guardado y persiste los cambios.
@@ -145,12 +166,12 @@ fun WearApp(
     var suggestionDismissed by rememberSaveable { mutableStateOf(false) }
     val suggestion = remember { suggestionForHour(LocalTime.now().hour) }
     // Ids de favoritos separados por comas; MainActivity entrega el valor guardado y persiste los cambios.
-    var favoritesRaw by rememberSaveable { mutableStateOf(serializeFavoriteIds(parseFavoriteIds(initialFavorites))) }
+    var favoritesRaw by rememberSaveable { mutableStateOf(serializeFavoriteIds(parseFavoriteIds(initialFavorites, lights))) }
     // true cuando el control de luz o el detalle de escena se abrieron desde Favoritos (atrás vuelve allí).
     var openedFromFavorites by rememberSaveable { mutableStateOf(false) }
-    val favorites = resolveFavorites(favoritesRaw)
+    val favorites = resolveFavorites(favoritesRaw, lights)
 
-    // Hub: solo la Lámpara de Sala pide confirmación remota; las demás luces cambian directo.
+    // Hub: solo la luz del hub (HUB_LIGHT_ID) pide confirmación remota; las demás cambian directo.
     val providers = remember(hubUrl) { LightProviders(hubUrl) }
     var hubStatus by rememberSaveable { mutableStateOf(HubStatus.IDLE) }
     // Orden pendiente y último estado confirmado de la Lámpara, en formato "1:45".
@@ -185,9 +206,15 @@ fun WearApp(
     }
 
     fun removeFavorite(favorite: Favorite) {
-        val remaining = parseFavoriteIds(favoritesRaw) - favorite.id
+        val remaining = parseFavoriteIds(favoritesRaw, lightStateHolder.lights) - favorite.id
         updateFavorites(remaining)
         if (remaining.isEmpty()) currentScreen = ScreenType.FAVORITES.name
+    }
+
+    // Al quitar luces, sus ids salen de los favoritos guardados (solo se escribe si algo cambió).
+    LaunchedEffect(lights) {
+        val existing = parseFavoriteIds(favoritesRaw, lights)
+        if (serializeFavoriteIds(existing) != favoritesRaw) updateFavorites(existing)
     }
 
     fun rollbackHubLight() {
@@ -250,7 +277,7 @@ fun WearApp(
     }
 
     /**
-     * Acción masiva (escena, Apagar todo, Deshacer, Restaurar demo): se aplica en local y, si dejó la
+     * Acción masiva (escena, Apagar todo, Deshacer, asistente): se aplica en local y, si dejó la
      * Lámpara distinta, envía UNA orden con su estado final. Si no la cambió, no envía nada.
      */
     fun runHubAction(action: String, change: () -> Unit) {
@@ -277,21 +304,46 @@ fun WearApp(
 
     fun turnOffAll() = runHubAction(HUB_ACTION_TURN_OFF_ALL) { lightStateHolder.turnOffAll() }
 
-    fun restoreDemo() = runHubAction(HUB_ACTION_RESTORE_DEMO) {
-        updateFavorites(parseFavoriteIds(DEFAULT_FAVORITES))
-        lightStateHolder.restore(defaultLightStates())
+    /** Punto de partida elegido: casa demo o casa vacía. Desde aquí ya no se vuelve a la bienvenida. */
+    fun finishOnboarding(demo: Boolean) {
+        if (demo) {
+            lightStateHolder.loadDemo()
+            // Con la casa demo los favoritos por defecto vuelven completos (el plafón ya existe).
+            updateFavorites(parseFavoriteIds(DEFAULT_FAVORITES, lightStateHolder.lights))
+        } else {
+            lightStateHolder.clear()
+        }
+        onOnboardingDoneChange(true)
+        houseGeneration++
+        currentScreen = ScreenType.HOME.name
+    }
+
+    /** "Borrar y empezar": sin luces, favoritos por defecto, primer uso pendiente y vuelta a la bienvenida. */
+    fun startOver() {
+        lightStateHolder.clear()
+        updateFavorites(parseFavoriteIds(DEFAULT_FAVORITES, lightStateHolder.lights))
         undoSnapshot = ""
         selectedSceneId = ""
         suggestionDismissed = false
         openedFromFavorites = false
-        currentScreen = ScreenType.FAVORITES.name
+        onOnboardingDoneChange(false)
+        houseGeneration++
+        currentScreen = ScreenType.WELCOME.name
     }
 
-    fun activateScene(scene: Scene) = runHubAction(HUB_ACTION_SCENE_PREFIX + scene.id) {
-        undoSnapshot = serializeLightStates(lightStateHolder.toMap())
-        lightStateHolder.applyScene(scene)
-        selectedSceneId = scene.id
-        currentScreen = ScreenType.SCENE_ACTIVE.name
+    fun activateScene(scene: Scene) {
+        // Sin luces sobre las que actuar no se aplica nada: el detalle muestra "Sin luces en …".
+        if (lightStateHolder.isSceneWithoutLights(scene)) {
+            selectedSceneId = scene.id
+            currentScreen = ScreenType.SCENE_DETAIL.name
+            return
+        }
+        runHubAction(HUB_ACTION_SCENE_PREFIX + scene.id) {
+            undoSnapshot = serializeLightStates(lightStateHolder.toMap())
+            lightStateHolder.applyScene(scene)
+            selectedSceneId = scene.id
+            currentScreen = ScreenType.SCENE_ACTIVE.name
+        }
     }
 
     fun undoScene() = runHubAction(HUB_ACTION_UNDO) {
@@ -301,15 +353,16 @@ fun WearApp(
     }
 
     /** Luces con nombre y habitación en el idioma de la app, para las reglas y el servidor. */
-    fun assistantLights(): List<AssistantLight> = appLights.map { light ->
-        val state = lightStateHolder.states[light.id] ?: LightState(false, 50)
+    fun assistantLights(): List<AssistantLight> = lightStateHolder.lights.map { light ->
+        val state = lightStateHolder.states[light.id] ?: LightState(false, DEFAULT_REMEMBERED_BRIGHTNESS)
         val room = appRooms.firstOrNull { it.id == light.roomId }
         AssistantLight(
             id = light.id,
-            name = context.getString(light.nameRes),
+            name = lightName(context, light),
             room = room?.let { context.getString(it.nameRes) }.orEmpty(),
             on = state.isOn,
-            brightness = state.brightness
+            brightness = state.brightness,
+            aliases = lightAliases(light.type.key, light.number)
         )
     }
 
@@ -340,6 +393,8 @@ fun WearApp(
         assistantReply = ""
         val local = parseLocalCommand(request, assistantLights())
         when {
+            // Sin luces no hay nada que proponer: ni reglas ni servidor.
+            lightStateHolder.lights.isEmpty() -> showAssistantError(AssistantError.NO_LIGHTS)
             local != null -> {
                 Log.i(ASSISTANT_TAG, "Reglas locales: ${local.size} acciones")
                 proposeAssistantActions(reply = "", actions = local)
@@ -358,7 +413,7 @@ fun WearApp(
     fun applyAssistant(encoded: String) = runHubAction(HUB_ACTION_ASSISTANT_PREFIX + encoded) {
         val actions = validateAssistantActions(decodeAssistantActions(encoded), lightStateHolder.states)
         undoSnapshot = serializeLightStates(lightStateHolder.toMap())
-        lightStateHolder.restore(applyAssistantActions(lightStateHolder.toMap(), actions))
+        lightStateHolder.restore(applyAssistantActions(lightStateHolder.toMap(), actions, lightStateHolder.lights))
         assistantActions = encoded
         currentScreen = ScreenType.ASSISTANT_DONE.name
     }
@@ -394,7 +449,6 @@ fun WearApp(
         when {
             action == HUB_ACTION_TURN_OFF_ALL -> turnOffAll()
             action == HUB_ACTION_UNDO -> undoScene()
-            action == HUB_ACTION_RESTORE_DEMO -> restoreDemo()
             action == HUB_ACTION_ASSISTANT_UNDO -> undoAssistant()
             action.startsWith(HUB_ACTION_ASSISTANT_PREFIX) -> applyAssistant(action.removePrefix(HUB_ACTION_ASSISTANT_PREFIX))
             action.startsWith(HUB_ACTION_SCENE_PREFIX) ->
@@ -457,6 +511,10 @@ fun WearApp(
     // Atrás) cancela la corrutina y corta la conexión. Tras recrear la Activity se vuelve a pedir.
     LaunchedEffect(currentScreen, assistantRequest) {
         if (currentScreen != ScreenType.ASSISTANT_LOADING.name) return@LaunchedEffect
+        if (lightStateHolder.lights.isEmpty()) {
+            showAssistantError(AssistantError.NO_LIGHTS)
+            return@LaunchedEffect
+        }
         when (val result = assistantClient.ask(assistantRequest, language.tag, assistantLights())) {
             is AssistantResult.Success -> proposeAssistantActions(result.reply, result.actions)
             AssistantResult.NotConfigured -> showAssistantError(AssistantError.NOT_CONFIGURED)
@@ -467,7 +525,9 @@ fun WearApp(
 
     val hubOverlay = (hubStatus == HubStatus.CONNECTING && hubConnectingVisible) || hubStatus == HubStatus.ERROR
 
-    BackHandler(currentScreen != ScreenType.HOME.name || hubOverlay) {
+    // En Inicio y en Bienvenida, Atrás lo maneja el sistema (cierra la app).
+    val isRootScreen = currentScreen == ScreenType.HOME.name || currentScreen == ScreenType.WELCOME.name
+    BackHandler(!isRootScreen || hubOverlay) {
         if (hubStatus == HubStatus.CONNECTING && hubConnectingVisible) {
             cancelHub()
             return@BackHandler
@@ -482,7 +542,7 @@ fun WearApp(
                     openedFromFavorites = false
                     currentScreen = ScreenType.FAVORITES.name
                 } else {
-                    val backLight = appLights.firstOrNull { it.id == selectedLightId }
+                    val backLight = lightStateHolder.lightById(selectedLightId)
                     if (backLight != null) selectedRoomId = backLight.roomId
                     currentScreen = ScreenType.ROOM_DETAIL.name
                 }
@@ -492,6 +552,8 @@ fun WearApp(
             ScreenType.ROOM_DETAIL.name -> currentScreen = ScreenType.ROOMS.name
             ScreenType.ROOMS.name -> currentScreen = ScreenType.HOME.name
             ScreenType.SETTINGS.name -> currentScreen = ScreenType.HOME.name
+            ScreenType.START_POINT.name -> currentScreen = ScreenType.WELCOME.name
+            ScreenType.START_OVER.name -> currentScreen = ScreenType.SETTINGS.name
             ScreenType.SUGGESTION.name -> currentScreen = ScreenType.HOME.name
             ScreenType.SCENES.name -> currentScreen = ScreenType.HOME.name
             ScreenType.SCENE_DETAIL.name -> {
@@ -521,7 +583,9 @@ fun WearApp(
 
     LuminaWearTheme(themeMode = themeMode) {
         AppScaffold(timeText = { LuminaTimeText() }) {
-            val stateHolder = rememberSaveableStateHolder()
+            // Nueva generación (camino elegido o volver a empezar): las pantallas empiezan arriba, sin el
+            // desplazamiento de la casa anterior.
+            val stateHolder = key(houseGeneration) { rememberSaveableStateHolder() }
             val currentKey = when {
                 // Conectando se dibuja en cuanto empieza la orden (antes de revelarse): con su propia clave
                 // y no la de la pantalla anterior, de la que heredaría el desplazamiento.
@@ -595,9 +659,11 @@ fun WearApp(
                                 },
                                 onEditClick = { currentScreen = ScreenType.FAVORITES_EDIT.name },
                                 onRemoveClick = ::removeFavorite,
-                                onRestoreDemoClick = ::restoreDemo,
+                                canAddPlafon = lightStateHolder.lightById(FAVORITE_PLAFON_ID) != null,
                                 onAddPlafonClick = {
-                                    updateFavorites(parseFavoriteIds(favoritesRaw) + FAVORITE_PLAFON_ID)
+                                    if (lightStateHolder.lightById(FAVORITE_PLAFON_ID) != null) {
+                                        updateFavorites(parseFavoriteIds(favoritesRaw, lightStateHolder.lights) + FAVORITE_PLAFON_ID)
+                                    }
                                 },
                                 onHomeClick = { currentScreen = ScreenType.HOME.name },
                                 contentPadding = contentPadding,
@@ -646,7 +712,8 @@ fun WearApp(
                                     },
                                     contentPadding = contentPadding,
                                     listState = listState,
-                                    transformationSpec = transformationSpec
+                                    transformationSpec = transformationSpec,
+                                    withoutLights = lightStateHolder.isSceneWithoutLights(scene)
                                 )
                             }
                         }
@@ -692,6 +759,7 @@ fun WearApp(
                         }
                         ScreenType.ASSISTANT.name -> {
                             AssistantScreen(
+                                hubLight = lightStateHolder.lightById(HUB_LIGHT_ID),
                                 onPhraseClick = { phrase -> submitAssistant(phrase, fromInput = false) },
                                 onWriteClick = { currentScreen = ScreenType.ASSISTANT_INPUT.name },
                                 onHomeClick = { currentScreen = ScreenType.HOME.name },
@@ -735,6 +803,7 @@ fun WearApp(
                             AssistantConfirmScreen(
                                 reply = assistantReply,
                                 actions = decodeAssistantActions(assistantActions),
+                                lights = lights,
                                 onApplyClick = { applyAssistant(assistantActions) },
                                 onCancelClick = ::backToAssistantOrigin,
                                 contentPadding = contentPadding,
@@ -745,11 +814,38 @@ fun WearApp(
                         ScreenType.ASSISTANT_DONE.name -> {
                             AssistantDoneScreen(
                                 actions = decodeAssistantActions(assistantActions),
+                                lights = lights,
                                 onUndoClick = ::undoAssistant,
                                 onHomeClick = {
                                     undoSnapshot = ""
                                     currentScreen = ScreenType.HOME.name
                                 },
+                                contentPadding = contentPadding,
+                                listState = listState,
+                                transformationSpec = transformationSpec
+                            )
+                        }
+                        ScreenType.WELCOME.name -> {
+                            WelcomeScreen(
+                                onStartClick = { currentScreen = ScreenType.START_POINT.name },
+                                contentPadding = contentPadding,
+                                listState = listState,
+                                transformationSpec = transformationSpec
+                            )
+                        }
+                        ScreenType.START_OVER.name -> {
+                            StartOverScreen(
+                                onCancelClick = { currentScreen = ScreenType.SETTINGS.name },
+                                onConfirmClick = ::startOver,
+                                contentPadding = contentPadding,
+                                listState = listState,
+                                transformationSpec = transformationSpec
+                            )
+                        }
+                        ScreenType.START_POINT.name -> {
+                            StartPointScreen(
+                                onDemoClick = { finishOnboarding(demo = true) },
+                                onEmptyClick = { finishOnboarding(demo = false) },
                                 contentPadding = contentPadding,
                                 listState = listState,
                                 transformationSpec = transformationSpec
@@ -764,6 +860,7 @@ fun WearApp(
                                     onThemeModeChange(it)
                                 },
                                 onLanguageChange = onLanguageChange,
+                                onStartOverClick = { currentScreen = ScreenType.START_OVER.name },
                                 onHomeClick = { currentScreen = ScreenType.HOME.name },
                                 contentPadding = contentPadding,
                                 listState = listState,
@@ -774,7 +871,7 @@ fun WearApp(
                             RoomsScreen(
                                 rooms = appRooms,
                                 getLightsCount = { roomId ->
-                                    val roomLights = appLights.filter { it.roomId == roomId }
+                                    val roomLights = lightStateHolder.lightsInRoom(roomId)
                                     val onCount = roomLights.count { lightStateHolder.states[it.id]?.isOn == true }
                                     Pair(onCount, roomLights.size)
                                 },
@@ -795,7 +892,7 @@ fun WearApp(
                                     currentScreen = ScreenType.ROOMS.name
                                 }
                             } else {
-                                val roomLights = appLights.filter { it.roomId == selectedRoomId }
+                                val roomLights = lightStateHolder.lightsInRoom(selectedRoomId)
                                 RoomDetailScreen(
                                     roomNameRes = room.nameRes,
                                     lights = roomLights,
@@ -813,14 +910,14 @@ fun WearApp(
                             }
                         }
                         ScreenType.LIGHT_CONTROL.name -> {
-                            val light = appLights.firstOrNull { it.id == selectedLightId }
+                            val light = lightStateHolder.lightById(selectedLightId)
                             if (light == null) {
                                 LaunchedEffect(selectedLightId) {
                                     currentScreen = ScreenType.ROOMS.name
                                 }
                             } else {
                                 val room = appRooms.firstOrNull { it.id == light.roomId }
-                                val state = lightStateHolder.states[light.id] ?: LightState(false, 50)
+                                val state = lightStateHolder.states[light.id] ?: LightState(false, DEFAULT_REMEMBERED_BRIGHTNESS)
 
                                 LightControlScreen(
                                     light = light,
@@ -920,7 +1017,7 @@ fun PreviewRoomsScreen() {
                 RoomsScreen(
                     rooms = appRooms,
                     getLightsCount = { roomId ->
-                        val roomLights = appLights.filter { it.roomId == roomId }
+                        val roomLights = demoLights.filter { it.roomId == roomId }
                         val onCount = roomLights.count { previewInitialLightsOn.contains(it.id) }
                         Pair(onCount, roomLights.size)
                     },
@@ -947,7 +1044,7 @@ fun PreviewRoomsScreenAllOff() {
                 RoomsScreen(
                     rooms = appRooms,
                     getLightsCount = { roomId ->
-                        val roomLights = appLights.filter { it.roomId == roomId }
+                        val roomLights = demoLights.filter { it.roomId == roomId }
                         Pair(0, roomLights.size)
                     },
                     onRoomClick = {},
@@ -969,11 +1066,11 @@ fun PreviewRoomDetailScreen() {
         AppScaffold(timeText = { LuminaTimeText() }) {
             val listState = rememberTransformingLazyColumnState()
             val transformationSpec = rememberTransformationSpec()
-            val holder = rememberLightStateHolder()
+            val holder = rememberLightStateHolder(DEMO_LIGHTS_CONFIG) {}
             ScreenScaffold(scrollState = listState) { contentPadding ->
                 RoomDetailScreen(
                     roomNameRes = R.string.room_living,
-                    lights = appLights.filter { it.roomId == "living_room" },
+                    lights = demoLights.filter { it.roomId == "living_room" },
                     lightStateHolder = holder,
                     onLightClick = {},
                     onBackClick = {},
@@ -994,11 +1091,11 @@ fun PreviewRoomDetailScreenAllOff() {
         AppScaffold(timeText = { LuminaTimeText() }) {
             val listState = rememberTransformingLazyColumnState()
             val transformationSpec = rememberTransformationSpec()
-            val holder = LightStateHolder(emptyMap())
+            val holder = LightStateHolder(DEMO_LIGHTS_CONFIG, emptyMap()).apply { turnOffAll() }
             ScreenScaffold(scrollState = listState) { contentPadding ->
                 RoomDetailScreen(
                     roomNameRes = R.string.room_living,
-                    lights = appLights.filter { it.roomId == "living_room" },
+                    lights = demoLights.filter { it.roomId == "living_room" },
                     lightStateHolder = holder,
                     onLightClick = {},
                     onBackClick = {},
@@ -1021,7 +1118,7 @@ fun PreviewLightControlOn() {
             val transformationSpec = rememberTransformationSpec()
             ScreenScaffold(scrollState = listState) { contentPadding ->
                 LightControlScreen(
-                    light = appLights.first { it.id == "living_plafon" },
+                    light = demoLights.first { it.id == "living_plafon" },
                     roomNameRes = R.string.room_living,
                     isOn = true,
                     brightness = 72,
@@ -1047,7 +1144,7 @@ fun PreviewLightControlOff() {
             val transformationSpec = rememberTransformationSpec()
             ScreenScaffold(scrollState = listState) { contentPadding ->
                 LightControlScreen(
-                    light = appLights.first { it.id == "living_plafon" },
+                    light = demoLights.first { it.id == "living_plafon" },
                     roomNameRes = R.string.room_living,
                     isOn = false,
                     brightness = 72,
@@ -1073,7 +1170,7 @@ fun PreviewLightControlMin() {
             val transformationSpec = rememberTransformationSpec()
             ScreenScaffold(scrollState = listState) { contentPadding ->
                 LightControlScreen(
-                    light = appLights.first { it.id == "living_plafon" },
+                    light = demoLights.first { it.id == "living_plafon" },
                     roomNameRes = R.string.room_living,
                     isOn = true,
                     brightness = 1,
@@ -1099,7 +1196,7 @@ fun PreviewLightControlMax() {
             val transformationSpec = rememberTransformationSpec()
             ScreenScaffold(scrollState = listState) { contentPadding ->
                 LightControlScreen(
-                    light = appLights.first { it.id == "living_plafon" },
+                    light = demoLights.first { it.id == "living_plafon" },
                     roomNameRes = R.string.room_living,
                     isOn = true,
                     brightness = 100,
@@ -1172,7 +1269,7 @@ fun PreviewRoomsLight() {
                 RoomsScreen(
                     rooms = appRooms,
                     getLightsCount = { roomId ->
-                        val roomLights = appLights.filter { it.roomId == roomId }
+                        val roomLights = demoLights.filter { it.roomId == roomId }
                         val onCount = roomLights.count { previewInitialLightsOn.contains(it.id) }
                         Pair(onCount, roomLights.size)
                     },
@@ -1198,7 +1295,7 @@ fun PreviewRoomsDark() {
                 RoomsScreen(
                     rooms = appRooms,
                     getLightsCount = { roomId ->
-                        val roomLights = appLights.filter { it.roomId == roomId }
+                        val roomLights = demoLights.filter { it.roomId == roomId }
                         val onCount = roomLights.count { previewInitialLightsOn.contains(it.id) }
                         Pair(onCount, roomLights.size)
                     },
@@ -1220,11 +1317,11 @@ fun PreviewRoomDetailLight() {
         AppScaffold(timeText = { LuminaTimeText() }) {
             val listState = rememberTransformingLazyColumnState()
             val transformationSpec = rememberTransformationSpec()
-            val holder = rememberLightStateHolder()
+            val holder = rememberLightStateHolder(DEMO_LIGHTS_CONFIG) {}
             ScreenScaffold(scrollState = listState) { contentPadding ->
                 RoomDetailScreen(
                     roomNameRes = R.string.room_living,
-                    lights = appLights.filter { it.roomId == "living_room" },
+                    lights = demoLights.filter { it.roomId == "living_room" },
                     lightStateHolder = holder,
                     onLightClick = {},
                     onBackClick = {},
@@ -1244,11 +1341,11 @@ fun PreviewRoomDetailDark() {
         AppScaffold(timeText = { LuminaTimeText() }) {
             val listState = rememberTransformingLazyColumnState()
             val transformationSpec = rememberTransformationSpec()
-            val holder = rememberLightStateHolder()
+            val holder = rememberLightStateHolder(DEMO_LIGHTS_CONFIG) {}
             ScreenScaffold(scrollState = listState) { contentPadding ->
                 RoomDetailScreen(
                     roomNameRes = R.string.room_living,
-                    lights = appLights.filter { it.roomId == "living_room" },
+                    lights = demoLights.filter { it.roomId == "living_room" },
                     lightStateHolder = holder,
                     onLightClick = {},
                     onBackClick = {},
@@ -1270,7 +1367,7 @@ fun PreviewLightControlLight() {
             val transformationSpec = rememberTransformationSpec()
             ScreenScaffold(scrollState = listState) { contentPadding ->
                 LightControlScreen(
-                    light = appLights.first { it.id == "living_plafon" },
+                    light = demoLights.first { it.id == "living_plafon" },
                     roomNameRes = R.string.room_living,
                     isOn = true,
                     brightness = 80,
@@ -1295,7 +1392,7 @@ fun PreviewLightControlDark() {
             val transformationSpec = rememberTransformationSpec()
             ScreenScaffold(scrollState = listState) { contentPadding ->
                 LightControlScreen(
-                    light = appLights.first { it.id == "living_plafon" },
+                    light = demoLights.first { it.id == "living_plafon" },
                     roomNameRes = R.string.room_living,
                     isOn = true,
                     brightness = 80,
@@ -1324,6 +1421,7 @@ fun PreviewSettingsLight() {
                     language = AppLanguage.ES,
                     onThemeModeChange = {},
                     onLanguageChange = {},
+                    onStartOverClick = {},
                     onHomeClick = {},
                     contentPadding = contentPadding,
                     listState = listState,
@@ -1347,6 +1445,7 @@ fun PreviewSettingsDark() {
                     language = AppLanguage.EN,
                     onThemeModeChange = {},
                     onLanguageChange = {},
+                    onStartOverClick = {},
                     onHomeClick = {},
                     contentPadding = contentPadding,
                     listState = listState,
@@ -1359,8 +1458,8 @@ fun PreviewSettingsDark() {
 
 // Previews de Favoritos (LW-009b): lista, edición, un favorito y vacío; claro y oscuro.
 
-private val previewFavoritesTwo = resolveFavorites(DEFAULT_FAVORITES)
-private val previewFavoritesOne = resolveFavorites("relax")
+private val previewFavoritesTwo = resolveFavorites(DEFAULT_FAVORITES, demoLights)
+private val previewFavoritesOne = resolveFavorites("relax", demoLights)
 
 @Composable
 private fun FavoritesPreviewHost(
@@ -1386,7 +1485,7 @@ private fun PreviewFavorites(themeMode: ThemeMode, favorites: List<Favorite>) {
             onFavoriteClick = {},
             onEditClick = {},
             onRemoveClick = {},
-            onRestoreDemoClick = {},
+            canAddPlafon = true,
             onAddPlafonClick = {},
             onHomeClick = {},
             contentPadding = padding,
@@ -1476,17 +1575,19 @@ private val previewAssistantActions = listOf(
     AssistantAction.SetLight("study_escritorio", on = false, brightness = null)
 )
 
+private val previewHubLight = demoLights.first { it.id == HUB_LIGHT_ID }
+
 @WearPreviewDevices
 @WearPreviewFontScales
 @Composable
 fun PreviewAssistantLight() = FavoritesPreviewHost(ThemeMode.LIGHT) { padding, state, spec ->
-    AssistantScreen(onPhraseClick = {}, onWriteClick = {}, onHomeClick = {}, contentPadding = padding, listState = state, transformationSpec = spec)
+    AssistantScreen(hubLight = previewHubLight, onPhraseClick = {}, onWriteClick = {}, onHomeClick = {}, contentPadding = padding, listState = state, transformationSpec = spec)
 }
 
 @WearPreviewDevices
 @Composable
 fun PreviewAssistantDark() = FavoritesPreviewHost(ThemeMode.DARK) { padding, state, spec ->
-    AssistantScreen(onPhraseClick = {}, onWriteClick = {}, onHomeClick = {}, contentPadding = padding, listState = state, transformationSpec = spec)
+    AssistantScreen(hubLight = previewHubLight, onPhraseClick = {}, onWriteClick = {}, onHomeClick = {}, contentPadding = padding, listState = state, transformationSpec = spec)
 }
 
 @WearPreviewDevices
@@ -1513,7 +1614,7 @@ fun PreviewAssistantInputDark() = FavoritesPreviewHost(ThemeMode.DARK) { padding
 @Composable
 fun PreviewAssistantConfirmLight() = FavoritesPreviewHost(ThemeMode.LIGHT) { padding, state, spec ->
     AssistantConfirmScreen(
-        reply = "Listo para leer.", actions = previewAssistantActions, onApplyClick = {}, onCancelClick = {},
+        reply = "Listo para leer.", actions = previewAssistantActions, lights = demoLights, onApplyClick = {}, onCancelClick = {},
         contentPadding = padding, listState = state, transformationSpec = spec
     )
 }
@@ -1522,7 +1623,7 @@ fun PreviewAssistantConfirmLight() = FavoritesPreviewHost(ThemeMode.LIGHT) { pad
 @Composable
 fun PreviewAssistantConfirmDark() = FavoritesPreviewHost(ThemeMode.DARK) { padding, state, spec ->
     AssistantConfirmScreen(
-        reply = "", actions = previewAssistantActions, onApplyClick = {}, onCancelClick = {},
+        reply = "", actions = previewAssistantActions, lights = demoLights, onApplyClick = {}, onCancelClick = {},
         contentPadding = padding, listState = state, transformationSpec = spec
     )
 }
@@ -1531,7 +1632,7 @@ fun PreviewAssistantConfirmDark() = FavoritesPreviewHost(ThemeMode.DARK) { paddi
 @Composable
 fun PreviewAssistantDoneLight() = FavoritesPreviewHost(ThemeMode.LIGHT) { padding, state, spec ->
     AssistantDoneScreen(
-        actions = previewAssistantActions, onUndoClick = {}, onHomeClick = {},
+        actions = previewAssistantActions, lights = demoLights, onUndoClick = {}, onHomeClick = {},
         contentPadding = padding, listState = state, transformationSpec = spec
     )
 }
@@ -1559,4 +1660,58 @@ fun PreviewAssistantNotConfiguredDark() = FavoritesPreviewHost(ThemeMode.DARK) {
         error = AssistantError.NOT_CONFIGURED, reply = "", onRetryClick = {}, onPhrasesClick = {}, onBackClick = {},
         contentPadding = padding, listState = state, transformationSpec = spec
     )
+}
+
+// Previews del primer uso (LW-014b): claro, oscuro y escalas de fuente.
+
+@WearPreviewDevices
+@WearPreviewFontScales
+@Composable
+fun PreviewWelcomeLight() = FavoritesPreviewHost(ThemeMode.LIGHT) { padding, state, spec ->
+    WelcomeScreen(onStartClick = {}, contentPadding = padding, listState = state, transformationSpec = spec)
+}
+
+@WearPreviewDevices
+@Composable
+fun PreviewWelcomeDark() = FavoritesPreviewHost(ThemeMode.DARK) { padding, state, spec ->
+    WelcomeScreen(onStartClick = {}, contentPadding = padding, listState = state, transformationSpec = spec)
+}
+
+@WearPreviewDevices
+@WearPreviewFontScales
+@Composable
+fun PreviewStartPointLight() = FavoritesPreviewHost(ThemeMode.LIGHT) { padding, state, spec ->
+    StartPointScreen(onDemoClick = {}, onEmptyClick = {}, contentPadding = padding, listState = state, transformationSpec = spec)
+}
+
+@WearPreviewDevices
+@Composable
+fun PreviewStartPointDark() = FavoritesPreviewHost(ThemeMode.DARK) { padding, state, spec ->
+    StartPointScreen(onDemoClick = {}, onEmptyClick = {}, contentPadding = padding, listState = state, transformationSpec = spec)
+}
+
+@WearPreviewDevices
+@WearPreviewFontScales
+@Composable
+fun PreviewHomeEmptyLight() = FavoritesPreviewHost(ThemeMode.LIGHT) { padding, state, spec ->
+    HomeScreen(lightsOn = 0, totalLights = 0, onTurnOffAllClick = {}, onRoomsClick = {}, contentPadding = padding, listState = state, transformationSpec = spec)
+}
+
+@WearPreviewDevices
+@Composable
+fun PreviewHomeEmptyDark() = FavoritesPreviewHost(ThemeMode.DARK) { padding, state, spec ->
+    HomeScreen(lightsOn = 0, totalLights = 0, onTurnOffAllClick = {}, onRoomsClick = {}, contentPadding = padding, listState = state, transformationSpec = spec)
+}
+
+@WearPreviewDevices
+@WearPreviewFontScales
+@Composable
+fun PreviewStartOverLight() = FavoritesPreviewHost(ThemeMode.LIGHT) { padding, state, spec ->
+    StartOverScreen(onCancelClick = {}, onConfirmClick = {}, contentPadding = padding, listState = state, transformationSpec = spec)
+}
+
+@WearPreviewDevices
+@Composable
+fun PreviewStartOverDark() = FavoritesPreviewHost(ThemeMode.DARK) { padding, state, spec ->
+    StartOverScreen(onCancelClick = {}, onConfirmClick = {}, contentPadding = padding, listState = state, transformationSpec = spec)
 }

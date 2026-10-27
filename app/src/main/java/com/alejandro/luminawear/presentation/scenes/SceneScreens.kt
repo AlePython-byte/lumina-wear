@@ -50,13 +50,15 @@ fun sceneRoomPercentSpaced(scene: Scene): String =
 private fun sceneRoomPercentTight(scene: Scene): String =
     stringResource(R.string.scene_room_percent_tight, sceneRoomName(scene), scene.percent)
 
+/** Encabezado con la etiqueta DEMO (se omite en el primer uso, antes de elegir la casa) y el título. */
 @Composable
 internal fun SceneHeader(
     title: String,
     scope: TransformingLazyColumnItemScope,
     transformationSpec: TransformationSpec,
     titleModifier: Modifier = Modifier,
-    titleStyle: TextStyle = LuminaTypography.button
+    titleStyle: TextStyle = LuminaTypography.button,
+    showDemoLabel: Boolean = true
 ) {
     with(scope) {
         ListHeader(
@@ -66,12 +68,14 @@ internal fun SceneHeader(
             transformation = SurfaceTransformation(transformationSpec)
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = stringResource(R.string.header_demo),
-                    style = LuminaTypography.label,
-                    color = LuminaTheme.colors.accentContent,
-                    textAlign = TextAlign.Center
-                )
+                if (showDemoLabel) {
+                    Text(
+                        text = stringResource(R.string.header_demo),
+                        style = LuminaTypography.label,
+                        color = LuminaTheme.colors.accentContent,
+                        textAlign = TextAlign.Center
+                    )
+                }
                 Text(
                     text = title,
                     style = titleStyle,
@@ -142,6 +146,10 @@ fun ScenesScreen(
     }
 }
 
+/**
+ * Detalle de una escena con Activar. Si su habitación (o la casa) no tiene luces, `withoutLights`
+ * muestra "Sin luces en …" con Volver y no ofrece Activar.
+ */
 @Composable
 fun SceneDetailScreen(
     scene: Scene,
@@ -149,7 +157,8 @@ fun SceneDetailScreen(
     onScenesClick: () -> Unit,
     contentPadding: PaddingValues,
     listState: TransformingLazyColumnState,
-    transformationSpec: TransformationSpec
+    transformationSpec: TransformationSpec,
+    withoutLights: Boolean = false
 ) {
     TransformingLazyColumn(
         contentPadding = contentPadding,
@@ -159,6 +168,26 @@ fun SceneDetailScreen(
     ) {
         item {
             SceneHeader(stringResource(scene.nameRes).uppercase(), this, transformationSpec)
+        }
+        if (withoutLights) {
+            item {
+                val title = if (scene.roomId == null) {
+                    stringResource(R.string.scene_no_lights_home)
+                } else {
+                    stringResource(R.string.scene_no_lights_room, sceneRoomName(scene))
+                }
+                CenteredText(title, this, transformationSpec, LuminaTypography.title, LuminaTheme.colors.accentContent)
+            }
+            item {
+                CenteredText(
+                    stringResource(R.string.scene_no_lights_body), this, transformationSpec,
+                    LuminaTypography.body, LuminaTheme.colors.muted
+                )
+            }
+            item {
+                ActionButton(stringResource(R.string.btn_back), this, transformationSpec, onScenesClick, secondary = true)
+            }
+            return@TransformingLazyColumn
         }
         item {
             Column(

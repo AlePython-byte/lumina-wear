@@ -41,11 +41,27 @@ class AppPreferences(context: Context) {
         prefs.edit().remove(KEY_HUB_URL).apply()
     }
 
+    /** Luces configuradas en JSON (ver encodeLightsConfig). Clave ausente o ilegible: casa demo. */
+    var lightsConfig: LightsConfig
+        get() = decodeLightsConfig(prefs.getString(KEY_LIGHTS_CONFIG, null))
+        set(value) {
+            prefs.edit().putString(KEY_LIGHTS_CONFIG, encodeLightsConfig(value)).apply()
+        }
+
+    /** Primer uso completado. Clave ausente: false (se muestra la bienvenida); true solo tras elegir un camino. */
+    var onboardingDone: Boolean
+        get() = prefs.getBoolean(KEY_ONBOARDING_DONE, false)
+        set(value) {
+            prefs.edit().putBoolean(KEY_ONBOARDING_DONE, value).apply()
+        }
+
     private companion object {
         const val FILE_NAME = "luminawear_prefs"
         const val KEY_HUB_URL = "hub_url"
         const val KEY_FAVORITES = "favorites"
         const val KEY_THEME_MODE = "theme_mode"
         const val KEY_LANGUAGE = "language"
+        const val KEY_LIGHTS_CONFIG = "lights_config"
+        const val KEY_ONBOARDING_DONE = "onboarding_done"
     }
 }
