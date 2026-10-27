@@ -24,7 +24,7 @@ Con el hub simulado:
 1. Arranca el hub: `python hub/hub.py` y abre http://localhost:8787 (el bombillo debe verse encendido al 45 %).
 2. Comprueba `http://localhost:8787/health` → `{"ok": true, "mode": "simulated"}`.
 3. Arranca el emulador y la app; toca la Lámpara de Sala y concede **"Dispositivos cercanos"** (ver abajo).
-4. Si el estado de la app y del bombillo no coinciden, usa **Favoritos → Restaurar demo**: vuelve a la Lámpara al 45 % y la envía al hub.
+4. Si el estado de la app y del bombillo no coinciden, abre **Sala → Lámpara** y enciende o apaga una vez para que la app y el bombillo queden sincronizados.
 5. Reloj físico: sigue la sección «Reloj físico» (más abajo): hub con `--host 0.0.0.0`, firewall, IP del PC fijada con `hub_url` y permitida en la configuración de red de depuración.
 
 Con el bombillo CozyLife real (además de lo anterior):
@@ -32,7 +32,7 @@ Con el bombillo CozyLife real (además de lo anterior):
 1. El PC debe estar en **la misma Wi-Fi que el bombillo** (no en el cable si va a otra red, ni en el punto de acceso del celular). Comprueba con `ipconfig` que la IP del PC sea de la misma red que `cozylife.ip`.
 2. `python hub/tools/cozylife_probe.py` debe imprimir `info` y `estado`. Si no, ver "Si el bombillo no responde".
 3. `python hub/hub.py --mode cozylife`. En la consola debe aparecer `bombillo: encendida N %` (o `apagada`) en unos segundos, y la página no debe decir "El bombillo no responde".
-4. La app no lee el estado del bombillo: la primera orden desde la app (o **Restaurar demo**) los pone de acuerdo.
+4. La app no lee el estado del bombillo: abre **Sala → Lámpara** y enciende o apaga una vez para que la app y el bombillo queden sincronizados.
 5. Deja el bombillo con corriente (interruptor encendido) todo el demo: sin corriente el hub responde 502 y la app muestra "No se pudo".
 
 ## Permiso de red local
@@ -95,7 +95,7 @@ Si la IP no está en esa lista, Android bloquea el envío antes de salir de la a
 ## Qué envía la app
 
 - Control de la Lámpara: encender/apagar al instante; −/+ tras 300 ms sin tocar.
-- Escenas, "Apagar todo", "Deshacer" y "Restaurar demo": un solo POST con el estado final de la Lámpara, solo si la acción la cambia. Si falla, todas las luces vuelven a como estaban.
+- Escenas, "Apagar todo", "Deshacer" y el asistente: un solo POST con el estado final de la Lámpara, solo si la acción la cambia. Si falla, todas las luces vuelven a como estaban.
 - "Conectando" solo aparece si el hub tarda más de 400 ms.
 - La app espera la respuesta del hub hasta 10 s (`HubProvider.TIMEOUT_MS`), más que el tope de una orden en el hub (8 s), para no cortar antes que él.
 
