@@ -47,6 +47,7 @@ import com.alejandro.luminawear.presentation.lights.HubConnectingScreen
 import com.alejandro.luminawear.presentation.lights.HubErrorScreen
 import com.alejandro.luminawear.presentation.lights.LightControlScreen
 import com.alejandro.luminawear.presentation.models.demoLights
+import com.alejandro.luminawear.presentation.onboarding.StartOverScreen
 import com.alejandro.luminawear.presentation.onboarding.StartPointScreen
 import com.alejandro.luminawear.presentation.onboarding.WelcomeScreen
 import com.alejandro.luminawear.presentation.models.lightName
@@ -313,9 +314,27 @@ fun WearApp(
 
     /** Punto de partida elegido: casa demo o casa vacía. Desde aquí ya no se vuelve a la bienvenida. */
     fun finishOnboarding(demo: Boolean) {
-        if (demo) lightStateHolder.loadDemo() else lightStateHolder.clear()
+        if (demo) {
+            lightStateHolder.loadDemo()
+            // Con la casa demo los favoritos por defecto vuelven completos (el plafón ya existe).
+            updateFavorites(parseFavoriteIds(DEFAULT_FAVORITES, lightStateHolder.lights))
+        } else {
+            lightStateHolder.clear()
+        }
         onOnboardingDoneChange(true)
         currentScreen = ScreenType.HOME.name
+    }
+
+    /** "Borrar y empezar": sin luces, favoritos por defecto, primer uso pendiente y vuelta a la bienvenida. */
+    fun startOver() {
+        lightStateHolder.clear()
+        updateFavorites(parseFavoriteIds(DEFAULT_FAVORITES, lightStateHolder.lights))
+        undoSnapshot = ""
+        selectedSceneId = ""
+        suggestionDismissed = false
+        openedFromFavorites = false
+        onOnboardingDoneChange(false)
+        currentScreen = ScreenType.WELCOME.name
     }
 
     fun activateScene(scene: Scene) {
@@ -820,6 +839,15 @@ fun WearApp(
                                 transformationSpec = transformationSpec
                             )
                         }
+                        ScreenType.START_OVER.name -> {
+                            StartOverScreen(
+                                onCancelClick = { currentScreen = ScreenType.SETTINGS.name },
+                                onConfirmClick = ::startOver,
+                                contentPadding = contentPadding,
+                                listState = listState,
+                                transformationSpec = transformationSpec
+                            )
+                        }
                         ScreenType.START_POINT.name -> {
                             StartPointScreen(
                                 onDemoClick = { finishOnboarding(demo = true) },
@@ -838,6 +866,7 @@ fun WearApp(
                                     onThemeModeChange(it)
                                 },
                                 onLanguageChange = onLanguageChange,
+                                onStartOverClick = { currentScreen = ScreenType.START_OVER.name },
                                 onHomeClick = { currentScreen = ScreenType.HOME.name },
                                 contentPadding = contentPadding,
                                 listState = listState,
@@ -1398,6 +1427,7 @@ fun PreviewSettingsLight() {
                     language = AppLanguage.ES,
                     onThemeModeChange = {},
                     onLanguageChange = {},
+                    onStartOverClick = {},
                     onHomeClick = {},
                     contentPadding = contentPadding,
                     listState = listState,
@@ -1421,6 +1451,7 @@ fun PreviewSettingsDark() {
                     language = AppLanguage.EN,
                     onThemeModeChange = {},
                     onLanguageChange = {},
+                    onStartOverClick = {},
                     onHomeClick = {},
                     contentPadding = contentPadding,
                     listState = listState,
@@ -1677,4 +1708,17 @@ fun PreviewHomeEmptyLight() = FavoritesPreviewHost(ThemeMode.LIGHT) { padding, s
 @Composable
 fun PreviewHomeEmptyDark() = FavoritesPreviewHost(ThemeMode.DARK) { padding, state, spec ->
     HomeScreen(lightsOn = 0, totalLights = 0, onTurnOffAllClick = {}, onRoomsClick = {}, contentPadding = padding, listState = state, transformationSpec = spec)
+}
+
+@WearPreviewDevices
+@WearPreviewFontScales
+@Composable
+fun PreviewStartOverLight() = FavoritesPreviewHost(ThemeMode.LIGHT) { padding, state, spec ->
+    StartOverScreen(onCancelClick = {}, onConfirmClick = {}, contentPadding = padding, listState = state, transformationSpec = spec)
+}
+
+@WearPreviewDevices
+@Composable
+fun PreviewStartOverDark() = FavoritesPreviewHost(ThemeMode.DARK) { padding, state, spec ->
+    StartOverScreen(onCancelClick = {}, onConfirmClick = {}, contentPadding = padding, listState = state, transformationSpec = spec)
 }

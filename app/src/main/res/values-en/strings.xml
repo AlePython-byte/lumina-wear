@@ -168,5 +168,10 @@
     <string name="scene_no_lights_room">No lights in %1$s.</string>
     <string name="scene_no_lights_home">No lights at home.</string>
     <string name="scene_no_lights_body">Add one to use this scene.</string>
+    <string name="settings_start_over">Start over</string>
+    <string name="start_over_header">Start over</string>
+    <string name="start_over_title">Start over?</string>
+    <string name="start_over_body">Your lights and favorites will be erased.</string>
+    <string name="start_over_btn_confirm">Erase and start</string>
     <string name="assistant_btn_phrases">Quick phrases</string>
 </resources>

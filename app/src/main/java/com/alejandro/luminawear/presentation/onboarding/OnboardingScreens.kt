@@ -52,6 +52,45 @@ fun WelcomeScreen(
     }
 }
 
+/** Confirmación de "Volver a empezar": Cancelar es la acción principal; borrar es la secundaria. */
+@Composable
+fun StartOverScreen(
+    onCancelClick: () -> Unit,
+    onConfirmClick: () -> Unit,
+    contentPadding: PaddingValues,
+    listState: TransformingLazyColumnState,
+    transformationSpec: TransformationSpec
+) {
+    TransformingLazyColumn(
+        contentPadding = contentPadding,
+        state = listState,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(LuminaSpacing.xs)
+    ) {
+        item {
+            SceneHeader(stringResource(R.string.start_over_header).uppercase(), this, transformationSpec, showDemoLabel = false)
+        }
+        item {
+            CenteredText(
+                stringResource(R.string.start_over_title), this, transformationSpec,
+                LuminaTypography.title, LuminaTheme.colors.accentContent
+            )
+        }
+        item {
+            CenteredText(
+                stringResource(R.string.start_over_body), this, transformationSpec,
+                LuminaTypography.body, LuminaTheme.colors.muted
+            )
+        }
+        item {
+            ActionButton(stringResource(R.string.btn_cancel), this, transformationSpec, onCancelClick)
+        }
+        item {
+            ActionButton(stringResource(R.string.start_over_btn_confirm), this, transformationSpec, onConfirmClick, secondary = true)
+        }
+    }
+}
+
 /** Punto de partida: la casa demo con sus 8 luces o una casa vacía. */
 @Composable
 fun StartPointScreen(

@@ -170,5 +170,10 @@
     <string name="scene_no_lights_room">Sin luces en %1$s.</string>
     <string name="scene_no_lights_home">Sin luces en la casa.</string>
     <string name="scene_no_lights_body">Añade una para usar esta escena.</string>
+    <string name="settings_start_over">Volver a empezar</string>
+    <string name="start_over_header">Volver a empezar</string>
+    <string name="start_over_title">¿Volver a empezar?</string>
+    <string name="start_over_body">Se borrarán tus luces y favoritos.</string>
+    <string name="start_over_btn_confirm">Borrar y empezar</string>
     <string name="assistant_btn_phrases">Frases rápidas</string>
 </resources>
