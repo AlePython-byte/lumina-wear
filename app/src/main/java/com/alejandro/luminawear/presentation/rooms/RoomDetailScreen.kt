@@ -27,6 +27,8 @@ import androidx.wear.compose.material3.lazy.TransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
 import com.alejandro.luminawear.R
 import com.alejandro.luminawear.presentation.models.Light
+import com.alejandro.luminawear.presentation.models.lightName
+import com.alejandro.luminawear.presentation.state.DEFAULT_REMEMBERED_BRIGHTNESS
 import com.alejandro.luminawear.presentation.state.LightStateHolder
 import com.alejandro.luminawear.presentation.theme.ActionButtonTokens
 import com.alejandro.luminawear.presentation.theme.LuminaBorder
@@ -80,7 +82,7 @@ fun RoomDetailScreen(
             val light = lights[index]
             val state = lightStateHolder.states[light.id]
             val isOn = state?.isOn == true
-            val brightness = state?.brightness ?: light.defaultBrightness
+            val brightness = state?.brightness ?: DEFAULT_REMEMBERED_BRIGHTNESS
 
             Card(
                 onClick = { onLightClick(light.id) },
@@ -98,7 +100,7 @@ fun RoomDetailScreen(
             ) {
                 Column(modifier = Modifier.padding(RoomControlTokens.padding)) {
                     Text(
-                        text = stringResource(light.nameRes),
+                        text = lightName(light),
                         style = LuminaTypography.button,
                         color = RoomControlTokens.title
                     )

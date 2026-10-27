@@ -42,6 +42,7 @@ import androidx.wear.compose.material3.lazy.TransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
 import com.alejandro.luminawear.R
 import com.alejandro.luminawear.presentation.models.Light
+import com.alejandro.luminawear.presentation.models.lightName
 import com.alejandro.luminawear.presentation.theme.ActionButtonTokens
 import com.alejandro.luminawear.presentation.theme.BrightnessDialTokens
 import com.alejandro.luminawear.presentation.theme.LightToggleTokens
@@ -64,9 +65,8 @@ fun LightControlScreen(
     listState: TransformingLazyColumnState,
     transformationSpec: TransformationSpec
 ) {
-    val lightName = stringResource(light.nameRes)
     val roomName = stringResource(roomNameRes)
-    val title = stringResource(R.string.light_control_title, lightName, roomName).uppercase()
+    val title = stringResource(R.string.light_control_title, lightName(light), roomName).uppercase()
 
     val decreaseDesc = stringResource(R.string.light_control_decrease)
     val increaseDesc = stringResource(R.string.light_control_increase)
