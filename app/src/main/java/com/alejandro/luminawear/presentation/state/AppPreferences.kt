@@ -48,9 +48,9 @@ class AppPreferences(context: Context) {
             prefs.edit().putString(KEY_LIGHTS_CONFIG, encodeLightsConfig(value)).apply()
         }
 
-    /** Primer uso completado. Clave ausente (instalaciones actuales): true, para que nada cambie. */
+    /** Primer uso completado. Clave ausente: false (se muestra la bienvenida); true solo tras elegir un camino. */
     var onboardingDone: Boolean
-        get() = prefs.getBoolean(KEY_ONBOARDING_DONE, true)
+        get() = prefs.getBoolean(KEY_ONBOARDING_DONE, false)
         set(value) {
             prefs.edit().putBoolean(KEY_ONBOARDING_DONE, value).apply()
         }

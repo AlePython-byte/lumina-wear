@@ -53,8 +53,11 @@ class MainActivity : ComponentActivity() {
         val initialFavorites = prefs.favorites
         val hubUrl = prefs.hubUrl
         val initialLights = prefs.lightsConfig
+        val onboardingDone = prefs.onboardingDone
         setContent {
             WearApp(
+                onboardingDone = onboardingDone,
+                onOnboardingDoneChange = { prefs.onboardingDone = it },
                 initialThemeMode = initialThemeMode,
                 language = language,
                 initialFavorites = initialFavorites,

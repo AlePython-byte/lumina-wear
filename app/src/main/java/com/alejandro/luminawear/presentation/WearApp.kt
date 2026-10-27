@@ -121,7 +121,8 @@ private val START_AT_TOP_KEYS = setOf(
 
 enum class ScreenType {
     HOME, ROOMS, ROOM_DETAIL, LIGHT_CONTROL, SETTINGS, SCENES, SCENE_DETAIL, SCENE_ACTIVE, SUGGESTION, FAVORITES, FAVORITES_EDIT,
-    ASSISTANT, ASSISTANT_INPUT, ASSISTANT_LOADING, ASSISTANT_CONFIRM, ASSISTANT_DONE, ASSISTANT_ERROR
+    ASSISTANT, ASSISTANT_INPUT, ASSISTANT_LOADING, ASSISTANT_CONFIRM, ASSISTANT_DONE, ASSISTANT_ERROR,
+    WELCOME, START_POINT, START_OVER
 }
 
 @Composable
@@ -134,7 +135,9 @@ fun WearApp(
     onFavoritesChange: (String) -> Unit = {},
     hubUrl: String = DEFAULT_HUB_URL,
     initialLights: LightsConfig = DEMO_LIGHTS_CONFIG,
-    onLightsChange: (LightsConfig) -> Unit = {}
+    onLightsChange: (LightsConfig) -> Unit = {},
+    onboardingDone: Boolean = true,
+    onOnboardingDoneChange: (Boolean) -> Unit = {}
 ) {
     val lightStateHolder = rememberLightStateHolder(initialLights, onLightsChange)
     // Luces que existen ahora, para dibujar. Las funciones de abajo leen lightStateHolder.lights: una
@@ -144,7 +147,10 @@ fun WearApp(
     val totalLights = lights.size
     val totalLightsOn = lightStateHolder.states.count { it.value.isOn }
 
-    var currentScreen by rememberSaveable { mutableStateOf(ScreenType.HOME.name) }
+    // Sin primer uso completado se empieza en la bienvenida.
+    var currentScreen by rememberSaveable {
+        mutableStateOf(if (onboardingDone) ScreenType.HOME.name else ScreenType.WELCOME.name)
+    }
     var selectedRoomId by rememberSaveable { mutableStateOf("") }
     var selectedLightId by rememberSaveable { mutableStateOf("") }
     // Único dueño del tema; MainActivity entrega el valor guardado y persiste los cambios.
@@ -490,7 +496,9 @@ fun WearApp(
 
     val hubOverlay = (hubStatus == HubStatus.CONNECTING && hubConnectingVisible) || hubStatus == HubStatus.ERROR
 
-    BackHandler(currentScreen != ScreenType.HOME.name || hubOverlay) {
+    // En Inicio y en Bienvenida, Atrás lo maneja el sistema (cierra la app).
+    val isRootScreen = currentScreen == ScreenType.HOME.name || currentScreen == ScreenType.WELCOME.name
+    BackHandler(!isRootScreen || hubOverlay) {
         if (hubStatus == HubStatus.CONNECTING && hubConnectingVisible) {
             cancelHub()
             return@BackHandler
@@ -515,6 +523,8 @@ fun WearApp(
             ScreenType.ROOM_DETAIL.name -> currentScreen = ScreenType.ROOMS.name
             ScreenType.ROOMS.name -> currentScreen = ScreenType.HOME.name
             ScreenType.SETTINGS.name -> currentScreen = ScreenType.HOME.name
+            ScreenType.START_POINT.name -> currentScreen = ScreenType.WELCOME.name
+            ScreenType.START_OVER.name -> currentScreen = ScreenType.SETTINGS.name
             ScreenType.SUGGESTION.name -> currentScreen = ScreenType.HOME.name
             ScreenType.SCENES.name -> currentScreen = ScreenType.HOME.name
             ScreenType.SCENE_DETAIL.name -> {
