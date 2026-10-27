@@ -32,7 +32,7 @@ fun initialLightState(id: String): LightState {
     else LightState(isOn = false, brightness = DEFAULT_REMEMBERED_BRIGHTNESS)
 }
 
-/** Estado inicial de cada luz de la lista (Restaurar demo, cargar la casa demo). */
+/** Estado inicial de cada luz de la lista (al cargar la casa demo). */
 fun defaultLightStates(lights: List<Light>): Map<String, LightState> =
     lights.associate { it.id to initialLightState(it.id) }
 

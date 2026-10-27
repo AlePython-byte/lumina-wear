@@ -78,7 +78,6 @@ import com.alejandro.luminawear.presentation.state.DEFAULT_FAVORITES
 import com.alejandro.luminawear.presentation.state.HUB_ACTION_ASSISTANT_PREFIX
 import com.alejandro.luminawear.presentation.state.HUB_ACTION_ASSISTANT_UNDO
 import com.alejandro.luminawear.presentation.state.FAVORITE_PLAFON_ID
-import com.alejandro.luminawear.presentation.state.HUB_ACTION_RESTORE_DEMO
 import com.alejandro.luminawear.presentation.state.HUB_ACTION_SCENE_PREFIX
 import com.alejandro.luminawear.presentation.state.HUB_ACTION_TURN_OFF_ALL
 import com.alejandro.luminawear.presentation.state.HUB_ACTION_UNDO
@@ -275,7 +274,7 @@ fun WearApp(
     }
 
     /**
-     * Acción masiva (escena, Apagar todo, Deshacer, Restaurar demo): se aplica en local y, si dejó la
+     * Acción masiva (escena, Apagar todo, Deshacer, asistente): se aplica en local y, si dejó la
      * Lámpara distinta, envía UNA orden con su estado final. Si no la cambió, no envía nada.
      */
     fun runHubAction(action: String, change: () -> Unit) {
@@ -301,16 +300,6 @@ fun WearApp(
     }
 
     fun turnOffAll() = runHubAction(HUB_ACTION_TURN_OFF_ALL) { lightStateHolder.turnOffAll() }
-
-    fun restoreDemo() = runHubAction(HUB_ACTION_RESTORE_DEMO) {
-        updateFavorites(parseFavoriteIds(DEFAULT_FAVORITES, lightStateHolder.lights))
-        lightStateHolder.restore(defaultLightStates(lightStateHolder.lights))
-        undoSnapshot = ""
-        selectedSceneId = ""
-        suggestionDismissed = false
-        openedFromFavorites = false
-        currentScreen = ScreenType.FAVORITES.name
-    }
 
     /** Punto de partida elegido: casa demo o casa vacía. Desde aquí ya no se vuelve a la bienvenida. */
     fun finishOnboarding(demo: Boolean) {
@@ -455,7 +444,6 @@ fun WearApp(
         when {
             action == HUB_ACTION_TURN_OFF_ALL -> turnOffAll()
             action == HUB_ACTION_UNDO -> undoScene()
-            action == HUB_ACTION_RESTORE_DEMO -> restoreDemo()
             action == HUB_ACTION_ASSISTANT_UNDO -> undoAssistant()
             action.startsWith(HUB_ACTION_ASSISTANT_PREFIX) -> applyAssistant(action.removePrefix(HUB_ACTION_ASSISTANT_PREFIX))
             action.startsWith(HUB_ACTION_SCENE_PREFIX) ->
@@ -664,7 +652,6 @@ fun WearApp(
                                 },
                                 onEditClick = { currentScreen = ScreenType.FAVORITES_EDIT.name },
                                 onRemoveClick = ::removeFavorite,
-                                onRestoreDemoClick = ::restoreDemo,
                                 canAddPlafon = lightStateHolder.lightById(FAVORITE_PLAFON_ID) != null,
                                 onAddPlafonClick = {
                                     if (lightStateHolder.lightById(FAVORITE_PLAFON_ID) != null) {
@@ -1491,7 +1478,6 @@ private fun PreviewFavorites(themeMode: ThemeMode, favorites: List<Favorite>) {
             onFavoriteClick = {},
             onEditClick = {},
             onRemoveClick = {},
-            onRestoreDemoClick = {},
             canAddPlafon = true,
             onAddPlafonClick = {},
             onHomeClick = {},

@@ -51,7 +51,7 @@ private fun favoriteRemoveDescription(favorite: Favorite): String? = when (favor
 }
 
 /**
- * Lista de favoritos. Con 2 o más: ítems + Editar + Inicio. Con uno: ítem + Quitar + Restaurar demo + Inicio.
+ * Lista de favoritos. Con 2 o más: ítems + Editar + Inicio. Con uno: ítem + Quitar + Inicio.
  * Sin favoritos: estado vacío con "Añadir plafón" (solo si esa luz existe) e "Inicio".
  */
 @Composable
@@ -60,7 +60,6 @@ fun FavoritesScreen(
     onFavoriteClick: (Favorite) -> Unit,
     onEditClick: () -> Unit,
     onRemoveClick: (Favorite) -> Unit,
-    onRestoreDemoClick: () -> Unit,
     canAddPlafon: Boolean,
     onAddPlafonClick: () -> Unit,
     onHomeClick: () -> Unit,
@@ -120,9 +119,6 @@ fun FavoritesScreen(
                         favoriteRemoveLabel(only), this, transformationSpec, { onRemoveClick(only) },
                         secondary = true, description = favoriteRemoveDescription(only)
                     )
-                }
-                item {
-                    ActionButton(stringResource(R.string.btn_restore_demo), this, transformationSpec, onRestoreDemoClick, secondary = true)
                 }
             } else {
                 item {
