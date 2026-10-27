@@ -29,9 +29,17 @@ class AppPreferences(context: Context) {
             prefs.edit().putString(KEY_FAVORITES, value).apply()
         }
 
-    /** URL del hub local. Sin UI por ahora; ausente → emulador (10.0.2.2:8787). */
-    val hubUrl: String
+    /** URL del hub local. Sin UI; ausente → emulador (10.0.2.2:8787). Se fija con `HubUrlOverride` en depuración. */
+    var hubUrl: String
         get() = prefs.getString(KEY_HUB_URL, null) ?: DEFAULT_HUB_URL
+        set(value) {
+            prefs.edit().putString(KEY_HUB_URL, value).apply()
+        }
+
+    /** Borra la dirección fijada: vuelve a la de fábrica. */
+    fun resetHubUrl() {
+        prefs.edit().remove(KEY_HUB_URL).apply()
+    }
 
     private companion object {
         const val FILE_NAME = "luminawear_prefs"
