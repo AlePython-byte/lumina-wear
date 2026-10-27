@@ -12,6 +12,7 @@ import com.alejandro.luminawear.R
 import com.alejandro.luminawear.presentation.components.ActionButton
 import com.alejandro.luminawear.presentation.components.NavigationItem
 import com.alejandro.luminawear.presentation.models.appRooms
+import com.alejandro.luminawear.presentation.models.lightName
 import com.alejandro.luminawear.presentation.scenes.CenteredText
 import com.alejandro.luminawear.presentation.scenes.SceneHeader
 import com.alejandro.luminawear.presentation.scenes.sceneRoomName
@@ -22,7 +23,7 @@ import com.alejandro.luminawear.presentation.theme.LuminaTypography
 
 @Composable
 private fun favoriteName(favorite: Favorite): String = when (favorite) {
-    is Favorite.LightFavorite -> stringResource(favorite.light.nameRes)
+    is Favorite.LightFavorite -> lightName(favorite.light)
     is Favorite.SceneFavorite -> stringResource(favorite.scene.nameRes)
 }
 
@@ -38,7 +39,7 @@ private fun favoriteDetail(favorite: Favorite): String = when (favorite) {
 @Composable
 private fun favoriteRemoveLabel(favorite: Favorite): String = when (favorite) {
     is Favorite.LightFavorite ->
-        stringResource(R.string.fav_remove_light, stringResource(favorite.light.nameRes).lowercase())
+        stringResource(R.string.fav_remove_light, lightName(favorite.light).lowercase())
     is Favorite.SceneFavorite -> stringResource(R.string.fav_remove_scene)
 }
 
@@ -51,7 +52,7 @@ private fun favoriteRemoveDescription(favorite: Favorite): String? = when (favor
 
 /**
  * Lista de favoritos. Con 2 o más: ítems + Editar + Inicio. Con uno: ítem + Quitar + Restaurar demo + Inicio.
- * Sin favoritos: estado vacío con "Añadir plafón" e "Inicio".
+ * Sin favoritos: estado vacío con "Añadir plafón" (solo si esa luz existe) e "Inicio".
  */
 @Composable
 fun FavoritesScreen(
@@ -60,6 +61,7 @@ fun FavoritesScreen(
     onEditClick: () -> Unit,
     onRemoveClick: (Favorite) -> Unit,
     onRestoreDemoClick: () -> Unit,
+    canAddPlafon: Boolean,
     onAddPlafonClick: () -> Unit,
     onHomeClick: () -> Unit,
     contentPadding: PaddingValues,
@@ -88,8 +90,10 @@ fun FavoritesScreen(
                     LuminaTypography.body, LuminaTheme.colors.muted
                 )
             }
-            item {
-                ActionButton(stringResource(R.string.fav_add_plafon), this, transformationSpec, onAddPlafonClick)
+            if (canAddPlafon) {
+                item {
+                    ActionButton(stringResource(R.string.fav_add_plafon), this, transformationSpec, onAddPlafonClick)
+                }
             }
             item {
                 ActionButton(stringResource(R.string.btn_home), this, transformationSpec, onHomeClick, secondary = true)
