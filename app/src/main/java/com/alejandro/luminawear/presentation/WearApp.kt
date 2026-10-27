@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -153,6 +154,8 @@ fun WearApp(
     var currentScreen by rememberSaveable {
         mutableStateOf(if (onboardingDone) ScreenType.HOME.name else ScreenType.WELCOME.name)
     }
+    // Sube al elegir punto de partida o volver a empezar; reinicia el desplazamiento guardado de cada pantalla.
+    var houseGeneration by rememberSaveable { mutableStateOf(0) }
     var selectedRoomId by rememberSaveable { mutableStateOf("") }
     var selectedLightId by rememberSaveable { mutableStateOf("") }
     // Único dueño del tema; MainActivity entrega el valor guardado y persiste los cambios.
@@ -311,6 +314,7 @@ fun WearApp(
             lightStateHolder.clear()
         }
         onOnboardingDoneChange(true)
+        houseGeneration++
         currentScreen = ScreenType.HOME.name
     }
 
@@ -323,6 +327,7 @@ fun WearApp(
         suggestionDismissed = false
         openedFromFavorites = false
         onOnboardingDoneChange(false)
+        houseGeneration++
         currentScreen = ScreenType.WELCOME.name
     }
 
@@ -578,7 +583,9 @@ fun WearApp(
 
     LuminaWearTheme(themeMode = themeMode) {
         AppScaffold(timeText = { LuminaTimeText() }) {
-            val stateHolder = rememberSaveableStateHolder()
+            // Nueva generación (camino elegido o volver a empezar): las pantallas empiezan arriba, sin el
+            // desplazamiento de la casa anterior.
+            val stateHolder = key(houseGeneration) { rememberSaveableStateHolder() }
             val currentKey = when {
                 // Conectando se dibuja en cuanto empieza la orden (antes de revelarse): con su propia clave
                 // y no la de la pantalla anterior, de la que heredaría el desplazamiento.
