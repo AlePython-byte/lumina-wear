@@ -25,7 +25,7 @@ Con el hub simulado:
 2. Comprueba `http://localhost:8787/health` → `{"ok": true, "mode": "simulated"}`.
 3. Arranca el emulador y la app; toca la Lámpara de Sala y concede **"Dispositivos cercanos"** (ver abajo).
 4. Si el estado de la app y del bombillo no coinciden, usa **Favoritos → Restaurar demo**: vuelve a la Lámpara al 45 % y la envía al hub.
-5. Reloj físico: hub con `--host 0.0.0.0`, la IP del PC en `hub_url` y en `network_security_config` (no subas IPs privadas a Git).
+5. Reloj físico: sigue la sección «Reloj físico» (más abajo): hub con `--host 0.0.0.0`, firewall, IP del PC fijada con `hub_url` y permitida en la configuración de red de depuración.
 
 Con el bombillo CozyLife real (además de lo anterior):
 
@@ -42,6 +42,55 @@ En Android 17 (API 37) la app necesita **"Dispositivos cercanos" / `ACCESS_LOCAL
 - La app lo pide la primera vez que se envía algo al hub (tocar la Lámpara, una escena, "Apagar todo"…): elige **Permitir**.
 - Si se negó dos veces, Android ya no vuelve a preguntar: actívalo en Ajustes del reloj → Apps → LuminaWear → Permisos, o desde el PC:
   `adb shell pm grant com.alejandro.luminawear android.permission.ACCESS_LOCAL_NETWORK`
+
+## Reloj físico
+
+Procedimiento para que un reloj real hable con el hub del PC. Solo para compilaciones de **depuración**. Probado con el emulador; falta probarlo con el reloj físico.
+
+1. **Arranca el hub escuchando en la red** (con `--mode cozylife` si usas el bombillo real):
+
+   ```
+   python hub/hub.py --host 0.0.0.0
+   ```
+
+   El hub no tiene autenticación: úsalo solo en una red de confianza y, al terminar, vuelve a arrancarlo sin `--host`.
+
+2. **Abre el puerto 8787 en el Firewall de Windows, solo para redes privadas.** En PowerShell como administrador:
+
+   ```
+   New-NetFirewallRule -DisplayName "LuminaWear hub" -Direction Inbound -Protocol TCP -LocalPort 8787 -Action Allow -Profile Private
+   ```
+
+   Si Windows clasifica la red como **pública** (suele pasar con el hotspot del celular), la regla no se aplica y el reloj no llegará: cambia el perfil de esa red a **Privada** en Configuración → Red e Internet. Para quitar la regla: `Remove-NetFirewallRule -DisplayName "LuminaWear hub"`.
+
+3. **Averigua la IP del PC** en la red del reloj: ejecuta `ipconfig` y copia la «Dirección IPv4» del adaptador Wi-Fi (por ejemplo `192.168.80.18` en casa o `172.20.10.4` en un hotspot de iPhone).
+
+4. **Prueba el hub desde el PC con curl antes de usar el reloj** (en PowerShell escribe `curl.exe`, porque `curl` es otro comando, y deja el JSON entre comillas simples como abajo):
+
+   ```
+   curl.exe http://IP_DEL_PC:8787/health
+   curl.exe http://IP_DEL_PC:8787/api/status
+   ```
+
+   `/health` debe responder `{"ok": true, "mode": "..."}` y `/api/status` el estado de la Lámpara. Para probar una orden (en modo `cozylife` cambia el bombillo real):
+
+   ```
+   curl.exe -X POST http://IP_DEL_PC:8787/api/lights/living_lampara -H "Content-Type: application/json" -d '{\"on\": true, \"brightness\": 45}'
+   ```
+
+5. **Fija la dirección en la app sin recompilar** (el reloj debe aparecer en `adb devices`; si hay más de un dispositivo, agrega `-s SERIAL`):
+
+   ```
+   adb shell am start -n com.alejandro.luminawear/.presentation.MainActivity --es hub_url http://IP_DEL_PC:8787
+   ```
+
+   Para volver a la dirección por defecto (`http://10.0.2.2:8787`, la del emulador): mismo comando con `--es hub_url reset`. La app solo acepta `http://`, una IP privada (10.x, 172.16–31.x o 192.168.x), un puerto y ninguna ruta; si la dirección no cumple, la ignora y registra solo el motivo (etiqueta `HubUrl`). Este extra solo funciona en compilaciones de depuración.
+
+6. **Permiso de red local:** en Android 17 la primera orden pide «Dispositivos cercanos» (ver «Permiso de red local»).
+
+**La IP cambia según la red.** En casa, en un hotspot o en otra Wi-Fi el PC tiene otra IP. Cada IP nueva exige dos cosas: fijarla con el comando del paso 5 y permitirla en la configuración de red de la app. Esa lista está en `app/src/debug/res/xml/network_security_config.xml` y **solo vale para compilaciones de depuración**: hoy incluye `10.0.2.2` (emulador), `192.168.80.18` (PC en casa) y `172.20.10.2` a `172.20.10.14` (hotspot del iPhone). La configuración de `app/src/main` solo permite `10.0.2.2`.
+
+Si la IP no está en esa lista, Android bloquea el envío antes de salir de la app: el registro dice `Cleartext HTTP traffic to IP not permitted` y la pantalla muestra «No se pudo». Para permitirla, agrega una línea `<domain includeSubdomains="false">IP</domain>` al archivo de depuración y recompila.
 
 ## Qué envía la app
 
