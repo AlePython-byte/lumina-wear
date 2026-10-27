@@ -32,7 +32,7 @@ fun WelcomeScreen(
         verticalArrangement = Arrangement.spacedBy(LuminaSpacing.xs)
     ) {
         item {
-            SceneHeader(stringResource(R.string.app_name).uppercase(), this, transformationSpec)
+            SceneHeader(stringResource(R.string.app_name).uppercase(), this, transformationSpec, showDemoLabel = false)
         }
         item {
             CenteredText(
@@ -68,7 +68,7 @@ fun StartPointScreen(
         verticalArrangement = Arrangement.spacedBy(LuminaSpacing.xs)
     ) {
         item {
-            SceneHeader(stringResource(R.string.start_point_header).uppercase(), this, transformationSpec)
+            SceneHeader(stringResource(R.string.start_point_header).uppercase(), this, transformationSpec, showDemoLabel = false)
         }
         item {
             NavigationItem(
