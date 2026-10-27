@@ -152,5 +152,10 @@
     <string name="assistant_no_lights_header">No lights</string>
     <string name="assistant_no_lights_title">Nothing to control</string>
     <string name="assistant_no_lights_body">There are no lights in the home yet.</string>
+
+    <!-- First use -->
+    <string name="welcome_title">Your home, on your wrist.</string>
+    <string name="welcome_body">Turn on and adjust your lights from here.</string>
+    <string name="welcome_btn_start">Start</string>
     <string name="assistant_btn_phrases">Quick phrases</string>
 </resources>

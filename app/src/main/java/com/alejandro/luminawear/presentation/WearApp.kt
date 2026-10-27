@@ -47,6 +47,7 @@ import com.alejandro.luminawear.presentation.lights.HubConnectingScreen
 import com.alejandro.luminawear.presentation.lights.HubErrorScreen
 import com.alejandro.luminawear.presentation.lights.LightControlScreen
 import com.alejandro.luminawear.presentation.models.demoLights
+import com.alejandro.luminawear.presentation.onboarding.WelcomeScreen
 import com.alejandro.luminawear.presentation.models.lightName
 import com.alejandro.luminawear.presentation.models.Scene
 import com.alejandro.luminawear.presentation.models.appRooms
@@ -789,6 +790,14 @@ fun WearApp(
                                     undoSnapshot = ""
                                     currentScreen = ScreenType.HOME.name
                                 },
+                                contentPadding = contentPadding,
+                                listState = listState,
+                                transformationSpec = transformationSpec
+                            )
+                        }
+                        ScreenType.WELCOME.name -> {
+                            WelcomeScreen(
+                                onStartClick = { currentScreen = ScreenType.START_POINT.name },
                                 contentPadding = contentPadding,
                                 listState = listState,
                                 transformationSpec = transformationSpec
@@ -1601,4 +1610,19 @@ fun PreviewAssistantNotConfiguredDark() = FavoritesPreviewHost(ThemeMode.DARK) {
         error = AssistantError.NOT_CONFIGURED, reply = "", onRetryClick = {}, onPhrasesClick = {}, onBackClick = {},
         contentPadding = padding, listState = state, transformationSpec = spec
     )
+}
+
+// Previews del primer uso (LW-014b): claro, oscuro y escalas de fuente.
+
+@WearPreviewDevices
+@WearPreviewFontScales
+@Composable
+fun PreviewWelcomeLight() = FavoritesPreviewHost(ThemeMode.LIGHT) { padding, state, spec ->
+    WelcomeScreen(onStartClick = {}, contentPadding = padding, listState = state, transformationSpec = spec)
+}
+
+@WearPreviewDevices
+@Composable
+fun PreviewWelcomeDark() = FavoritesPreviewHost(ThemeMode.DARK) { padding, state, spec ->
+    WelcomeScreen(onStartClick = {}, contentPadding = padding, listState = state, transformationSpec = spec)
 }

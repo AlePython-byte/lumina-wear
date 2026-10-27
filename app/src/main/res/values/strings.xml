@@ -154,5 +154,10 @@
     <string name="assistant_no_lights_header">Sin luces</string>
     <string name="assistant_no_lights_title">Nada que controlar</string>
     <string name="assistant_no_lights_body">Todavía no hay luces en la casa.</string>
+
+    <!-- Primer uso -->
+    <string name="welcome_title">Tu casa, en la muñeca.</string>
+    <string name="welcome_body">Enciende y ajusta tus luces desde aquí.</string>
+    <string name="welcome_btn_start">Empezar</string>
     <string name="assistant_btn_phrases">Frases rápidas</string>
 </resources>
