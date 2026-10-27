@@ -159,5 +159,10 @@
     <string name="welcome_title">Tu casa, en la muñeca.</string>
     <string name="welcome_body">Enciende y ajusta tus luces desde aquí.</string>
     <string name="welcome_btn_start">Empezar</string>
+    <string name="start_point_header">Punto de partida</string>
+    <string name="start_point_demo">Casa demo</string>
+    <string name="start_point_demo_detail">8 luces de ejemplo</string>
+    <string name="start_point_empty">Empezar desde cero</string>
+    <string name="start_point_empty_detail">Añade tus luces</string>
     <string name="assistant_btn_phrases">Frases rápidas</string>
 </resources>

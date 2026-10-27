@@ -157,5 +157,10 @@
     <string name="welcome_title">Your home, on your wrist.</string>
     <string name="welcome_body">Turn on and adjust your lights from here.</string>
     <string name="welcome_btn_start">Start</string>
+    <string name="start_point_header">Start point</string>
+    <string name="start_point_demo">Demo home</string>
+    <string name="start_point_demo_detail">8 sample lights</string>
+    <string name="start_point_empty">Start from scratch</string>
+    <string name="start_point_empty_detail">Add your lights</string>
     <string name="assistant_btn_phrases">Quick phrases</string>
 </resources>

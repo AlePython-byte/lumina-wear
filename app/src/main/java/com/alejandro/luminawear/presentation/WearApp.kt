@@ -47,6 +47,7 @@ import com.alejandro.luminawear.presentation.lights.HubConnectingScreen
 import com.alejandro.luminawear.presentation.lights.HubErrorScreen
 import com.alejandro.luminawear.presentation.lights.LightControlScreen
 import com.alejandro.luminawear.presentation.models.demoLights
+import com.alejandro.luminawear.presentation.onboarding.StartPointScreen
 import com.alejandro.luminawear.presentation.onboarding.WelcomeScreen
 import com.alejandro.luminawear.presentation.models.lightName
 import com.alejandro.luminawear.presentation.models.Scene
@@ -308,6 +309,13 @@ fun WearApp(
         suggestionDismissed = false
         openedFromFavorites = false
         currentScreen = ScreenType.FAVORITES.name
+    }
+
+    /** Punto de partida elegido: casa demo o casa vacía. Desde aquí ya no se vuelve a la bienvenida. */
+    fun finishOnboarding(demo: Boolean) {
+        if (demo) lightStateHolder.loadDemo() else lightStateHolder.clear()
+        onOnboardingDoneChange(true)
+        currentScreen = ScreenType.HOME.name
     }
 
     fun activateScene(scene: Scene) = runHubAction(HUB_ACTION_SCENE_PREFIX + scene.id) {
@@ -798,6 +806,15 @@ fun WearApp(
                         ScreenType.WELCOME.name -> {
                             WelcomeScreen(
                                 onStartClick = { currentScreen = ScreenType.START_POINT.name },
+                                contentPadding = contentPadding,
+                                listState = listState,
+                                transformationSpec = transformationSpec
+                            )
+                        }
+                        ScreenType.START_POINT.name -> {
+                            StartPointScreen(
+                                onDemoClick = { finishOnboarding(demo = true) },
+                                onEmptyClick = { finishOnboarding(demo = false) },
                                 contentPadding = contentPadding,
                                 listState = listState,
                                 transformationSpec = transformationSpec
@@ -1625,4 +1642,17 @@ fun PreviewWelcomeLight() = FavoritesPreviewHost(ThemeMode.LIGHT) { padding, sta
 @Composable
 fun PreviewWelcomeDark() = FavoritesPreviewHost(ThemeMode.DARK) { padding, state, spec ->
     WelcomeScreen(onStartClick = {}, contentPadding = padding, listState = state, transformationSpec = spec)
+}
+
+@WearPreviewDevices
+@WearPreviewFontScales
+@Composable
+fun PreviewStartPointLight() = FavoritesPreviewHost(ThemeMode.LIGHT) { padding, state, spec ->
+    StartPointScreen(onDemoClick = {}, onEmptyClick = {}, contentPadding = padding, listState = state, transformationSpec = spec)
+}
+
+@WearPreviewDevices
+@Composable
+fun PreviewStartPointDark() = FavoritesPreviewHost(ThemeMode.DARK) { padding, state, spec ->
+    StartPointScreen(onDemoClick = {}, onEmptyClick = {}, contentPadding = padding, listState = state, transformationSpec = spec)
 }
