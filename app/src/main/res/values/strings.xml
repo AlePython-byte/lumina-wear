@@ -181,4 +181,11 @@
         <item quantity="other">%1$d luces</item>
     </plurals>
     <string name="add_light_room_full">Completa</string>
+    <string name="add_light_type_header">%1$s · 2 de 2</string>
+    <string name="add_light_type_plafon_detail">Luz de techo</string>
+    <string name="add_light_type_lampara_detail">Luz de mesa</string>
+    <string name="add_light_type_tira_detail">Luz de apoyo</string>
+    <string name="add_light_type_hub">Lámpara con hub</string>
+    <string name="add_light_type_hub_detail">Bombillo real</string>
+    <string name="add_light_btn_back">Atrás</string>
 </resources>

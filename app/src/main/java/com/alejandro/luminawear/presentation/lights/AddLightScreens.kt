@@ -12,6 +12,7 @@ import androidx.wear.compose.material3.lazy.TransformationSpec
 import com.alejandro.luminawear.R
 import com.alejandro.luminawear.presentation.components.ActionButton
 import com.alejandro.luminawear.presentation.components.NavigationItem
+import com.alejandro.luminawear.presentation.models.LightType
 import com.alejandro.luminawear.presentation.models.Room
 import com.alejandro.luminawear.presentation.scenes.SceneHeader
 import com.alejandro.luminawear.presentation.theme.LuminaSpacing
@@ -61,4 +62,50 @@ fun AddLightRoomScreen(
             ActionButton(stringResource(R.string.btn_cancel), this, transformationSpec, onCancelClick, secondary = true)
         }
     }
+}
+
+/** Añadir luz, paso 2 de 2: elegir el tipo entre los que se pueden añadir ahora. */
+@Composable
+fun AddLightTypeScreen(
+    roomNameRes: Int,
+    types: List<LightType>,
+    onTypeClick: (LightType) -> Unit,
+    onBackClick: () -> Unit,
+    contentPadding: PaddingValues,
+    listState: TransformingLazyColumnState,
+    transformationSpec: TransformationSpec
+) {
+    TransformingLazyColumn(
+        contentPadding = contentPadding,
+        state = listState,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(LuminaSpacing.xs)
+    ) {
+        item {
+            SceneHeader(
+                stringResource(R.string.add_light_type_header, stringResource(roomNameRes)).uppercase(),
+                this, transformationSpec, showDemoLabel = false
+            )
+        }
+        items(types.size) { index ->
+            val type = types[index]
+            NavigationItem(
+                title = if (type == LightType.HUB_LAMP) stringResource(R.string.add_light_type_hub) else stringResource(type.nameRes),
+                detail = stringResource(addLightTypeDetailRes(type)),
+                scope = this,
+                transformationSpec = transformationSpec,
+                onClick = { onTypeClick(type) }
+            )
+        }
+        item {
+            ActionButton(stringResource(R.string.add_light_btn_back), this, transformationSpec, onBackClick, secondary = true)
+        }
+    }
+}
+
+private fun addLightTypeDetailRes(type: LightType): Int = when (type) {
+    LightType.PLAFON -> R.string.add_light_type_plafon_detail
+    LightType.LAMPARA -> R.string.add_light_type_lampara_detail
+    LightType.TIRA -> R.string.add_light_type_tira_detail
+    else -> R.string.add_light_type_hub_detail
 }

@@ -45,6 +45,7 @@ import com.alejandro.luminawear.presentation.favorites.FavoritesEditScreen
 import com.alejandro.luminawear.presentation.favorites.FavoritesScreen
 import com.alejandro.luminawear.presentation.home.HomeScreen
 import com.alejandro.luminawear.presentation.lights.AddLightRoomScreen
+import com.alejandro.luminawear.presentation.lights.AddLightTypeScreen
 import com.alejandro.luminawear.presentation.lights.HubConnectingScreen
 import com.alejandro.luminawear.presentation.lights.HubErrorScreen
 import com.alejandro.luminawear.presentation.lights.LightControlScreen
@@ -126,7 +127,7 @@ private val START_AT_TOP_KEYS = setOf(
 enum class ScreenType {
     HOME, ROOMS, ROOM_DETAIL, LIGHT_CONTROL, SETTINGS, SCENES, SCENE_DETAIL, SCENE_ACTIVE, SUGGESTION, FAVORITES, FAVORITES_EDIT,
     ASSISTANT, ASSISTANT_INPUT, ASSISTANT_LOADING, ASSISTANT_CONFIRM, ASSISTANT_DONE, ASSISTANT_ERROR,
-    WELCOME, START_POINT, START_OVER, ADD_LIGHT_ROOM
+    WELCOME, START_POINT, START_OVER, ADD_LIGHT_ROOM, ADD_LIGHT_TYPE
 }
 
 @Composable
@@ -559,6 +560,7 @@ fun WearApp(
             ScreenType.START_POINT.name -> currentScreen = ScreenType.WELCOME.name
             ScreenType.START_OVER.name -> currentScreen = ScreenType.SETTINGS.name
             ScreenType.ADD_LIGHT_ROOM.name -> currentScreen = addLightOrigin
+            ScreenType.ADD_LIGHT_TYPE.name -> currentScreen = ScreenType.ADD_LIGHT_ROOM.name
             ScreenType.SUGGESTION.name -> currentScreen = ScreenType.HOME.name
             ScreenType.SCENES.name -> currentScreen = ScreenType.HOME.name
             ScreenType.SCENE_DETAIL.name -> {
@@ -852,13 +854,32 @@ fun WearApp(
                                 rooms = appRooms,
                                 lightsInRoom = { roomId -> lightStateHolder.lightsInRoom(roomId).size },
                                 isFull = lightStateHolder::roomIsFull,
-                                // El paso 2 (tipo) llega en el siguiente paso; por ahora solo se recuerda la habitación.
-                                onRoomClick = { roomId -> addLightRoomId = roomId },
+                                onRoomClick = { roomId ->
+                                    addLightRoomId = roomId
+                                    currentScreen = ScreenType.ADD_LIGHT_TYPE.name
+                                },
                                 onCancelClick = { currentScreen = addLightOrigin },
                                 contentPadding = contentPadding,
                                 listState = listState,
                                 transformationSpec = transformationSpec
                             )
+                        }
+                        ScreenType.ADD_LIGHT_TYPE.name -> {
+                            val room = appRooms.firstOrNull { it.id == addLightRoomId }
+                            if (room == null) {
+                                LaunchedEffect(addLightRoomId) { currentScreen = ScreenType.ADD_LIGHT_ROOM.name }
+                            } else {
+                                AddLightTypeScreen(
+                                    roomNameRes = room.nameRes,
+                                    types = lightStateHolder.addableTypes(),
+                                    // Añadir la luz llega en el siguiente paso.
+                                    onTypeClick = {},
+                                    onBackClick = { currentScreen = ScreenType.ADD_LIGHT_ROOM.name },
+                                    contentPadding = contentPadding,
+                                    listState = listState,
+                                    transformationSpec = transformationSpec
+                                )
+                            }
                         }
                         ScreenType.START_POINT.name -> {
                             StartPointScreen(

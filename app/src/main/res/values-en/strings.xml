@@ -179,4 +179,11 @@
         <item quantity="other">%1$d lights</item>
     </plurals>
     <string name="add_light_room_full">Full</string>
+    <string name="add_light_type_header">%1$s · 2 of 2</string>
+    <string name="add_light_type_plafon_detail">Overhead light</string>
+    <string name="add_light_type_lampara_detail">Table light</string>
+    <string name="add_light_type_tira_detail">Support light</string>
+    <string name="add_light_type_hub">Lamp with hub</string>
+    <string name="add_light_type_hub_detail">Real bulb</string>
+    <string name="add_light_btn_back">Back</string>
 </resources>
