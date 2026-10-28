@@ -721,3 +721,87 @@ Confirmé sin cambios: 8 luces en 3 habitaciones, las 4 escenas, los archivos ci
 - Compilado e instalado: no aplica, no hubo cambios de código.
 - Probado: verificación por lectura del código y de los recursos, no en ejecución.
 - Sin probar: lo listado arriba como no comprobable, además de TalkBack real, fuente 1,3 en inglés y reloj físico, que el documento ya marca como pendientes.
+
+---
+
+## LW-013a — Hub con reloj físico: dirección por intent y red de depuración
+
+**Fecha:** 2026-10-26
+
+**Qué hice:**
+- **Dirección del hub por intent (solo depuración).** El extra `hub_url` de `MainActivity` fija la dirección del hub sin recompilar (`--es hub_url http://IP:8787`) y `reset` vuelve a la de fábrica. `HubUrl.kt` solo acepta `http://`, una IP privada literal (10.x, 172.16–31.x o 192.168.x), un puerto y ninguna ruta; si no cumple, la ignora y registra solo el motivo (etiqueta `HubUrl`), nunca la dirección.
+- **Configuración de red de depuración.** `app/src/debug/res/xml/network_security_config.xml` permite HTTP solo a `10.0.2.2` (emulador), `192.168.80.18` (PC en casa) y `172.20.10.2` a `172.20.10.14` (hotspot del iPhone). La configuración de `main` sigue permitiendo solo `10.0.2.2`.
+- **Guía en `hub/README.md`**, sección «Reloj físico»: hub con `--host 0.0.0.0`, regla de firewall solo para redes privadas, cómo averiguar la IP del PC, prueba con `curl.exe`, el comando de `hub_url` y qué hacer si la IP no está en la lista.
+
+**Estados:**
+- Implementado: sí.
+- Probado en emulador por Alejandro: el bombillo real desde la app, con el PC y el bombillo conectados al hotspot del iPhone (hub escuchando en el PC, bombillo en 172.20.10.2). Existe una grabación de esa prueba; no está en el repositorio.
+- **Sin probar:** reloj físico. La guía lo dice: «falta probarlo con el reloj físico».
+
+---
+
+## LW-014a — Capa de datos de luces
+
+**Fecha:** 2026-10-26
+
+**Qué hice:** dejé de tener las 8 luces fijas en el código; ahora la lista de luces es configuración.
+- **Modelo.** `Light` (id, habitación, tipo y número de orden) y `LightType`. El nombre visible no se guarda: se deriva del tipo y del número en el idioma actual («Plafón», «Plafón 2»). Solo Plafón, Lámpara, Tira LED y la luz del hub se pueden añadir; los otros cinco tipos existen únicamente en la casa demo.
+- **Guardado.** `LightsConfig` se guarda como JSON en las preferencias (`lights_config`) con un contador `next_id` que solo crece, para no reutilizar ids. Un JSON ilegible, o entradas con habitación, tipo o id inválidos, no rompen la app: se descartan o se vuelve a la casa demo.
+- **Estado.** `LightStateHolder` permite añadir, quitar, vaciar y recargar la demo conservando el estado del resto. La luz del hub solo puede existir una vez y usa siempre `living_lampara`.
+- **Lo que depende de la lista.** Los favoritos ignoran las luces quitadas, las escenas se calculan con las luces que existen, Inicio cuenta con la lista real y el asistente busca las luces por tipo y número con la lista actual. También evité un cierre cuando no existe la luz del hub y hice que el asistente responda «Sin luces» sin consultar al servidor.
+
+**Estados:**
+- Implementado: sí (commits `45a927f`, `d2f39f2`, `a39d04d`, `791004d`, `9179155`, `676bec9`).
+- Probado: sin registro propio; se ejerció a través de LW-014b y LW-014c. No hay pruebas automáticas en el repositorio.
+- Sin probar: el comportamiento con un JSON de configuración dañado.
+
+---
+
+## LW-014b — Primer uso: bienvenida, punto de partida, estados vacíos y Volver a empezar
+
+**Fecha:** 2026-10-26
+
+**Qué hice:**
+- **Bienvenida y punto de partida.** Si el primer uso no está completo, la app arranca en la bienvenida; «Empezar» lleva a elegir «Casa demo» (8 luces de ejemplo) o «Empezar desde cero». Las dos pantallas no muestran la etiqueta DEMO y empiezan arriba.
+- **Estados vacíos.** Inicio sin luces («Aún no hay luces.»), habitaciones sin luces («Sin luces») y escenas cuya habitación o casa no tiene luces («Sin luces en Sala.»), que no aplican nada.
+- **Volver a empezar** en Ajustes, con confirmación: borra luces y favoritos y vuelve a la bienvenida. El botón principal es «Cancelar».
+- **Favoritos.** Quité «Restaurar demo» (ya no tiene sentido con luces configurables) y generalicé el texto de «Buenas noches». En `hub/README.md` expliqué cómo sincronizar la Lámpara sin Restaurar demo.
+
+**Estados:**
+- Implementado: sí (commits `6fbaaec` a `e75f64f`).
+- Probado en emulador por Alejandro: el flujo de primer uso, los estados vacíos y Volver a empezar.
+- Sin probar: reloj físico. Sin evidencia en el repositorio de pruebas por pantalla: no hay pruebas automáticas.
+
+---
+
+## LW-014c — Añadir y quitar luces
+
+**Fecha:** 2026-10-27
+
+**Qué hice:**
+- **Añadir luz en 2 pasos:** habitación y tipo (Plafón, Lámpara, Tira LED o Lámpara con hub), y una pantalla «Luz añadida» con «Controlar» y «Añadir otra». Las luces nuevas nacen apagadas con el brillo recordado en 50 %. El límite es de 6 por habitación: el paso de habitación muestra «Completa» y el detalle de la habitación oculta «Añadir luz».
+- **Puntos de entrada:** Inicio sin luces, Habitaciones, el detalle de una habitación (salta el paso 1) y el detalle de una escena sin luces (salta el paso 1 si la escena es de una habitación).
+- **Quitar luz** desde el control de la luz, con confirmación: el botón principal es «Conservar». Al quitarla sale de favoritos y deja de contar en las escenas.
+- **Corrección:** en inglés, el nombre de la habitación en «No lights in …» va en minúscula.
+
+**Estados:**
+- Implementado: sí (commits `9f65844` a `b4e1437`).
+- Probado en emulador por Alejandro: añadir y quitar luces, el límite de 6 **solo en Estudio**, y la Lámpara con hub tras quitarla y volver a añadirla (con el hub simulado).
+- **Sin probar:** el límite de 6 en Sala y Dormitorio; reloj físico.
+
+---
+
+## LW-014d — Textos de primer uso y envío del teclado
+
+**Fecha:** 2026-10-28
+
+**Qué hice:**
+- **Inicio vacío.** El texto ahora dice «Añade la primera para controlarla.» (en: «Add the first one to control it.»).
+- **«Luz añadida».** El titular es «Luz añadida.» («Light added.») y el cuerpo «<nombre> · <habitación> · apagada.», por ejemplo «Plafón 2 · Sala · apagada.». Así la concordancia no depende del género del nombre. Quité la cadena «<nombre> añadido.».
+- **Envío del teclado en el asistente.** `AssistantInputScreen` ahora recibe el texto al enviar: el Enter usa el texto recién saneado y la flecha del teclado y el botón «Enviar» leen el texto vigente con `rememberUpdatedState`, no el de una composición anterior. Sospechaba que `onSend` enviaba el borrador anterior; no lo reproduje antes del cambio, así que la causa es una deducción del código.
+
+**Estados:**
+- Implementado y compilado: sí, `installDebug` sin errores (commits `ddff05f` y `8b0a504`).
+- Instalado: sí, en el emulador Wear OS pequeño y redondo (384×384).
+- Probado en el emulador: Inicio vacío con el texto nuevo; «Luz añadida.» con «Plafón · Sala · apagada.» y «Lámpara · Sala · apagada.»; el envío con Enter de dos frases distintas seguidas («enciende todo» y luego «apaga todo»), que propuso «Encender todas las luces» y después «Apagar todas las luces».
+- **Sin probar:** la flecha de envío del teclado de Wear. Con `adb shell input text` el texto quedó en el editor propio del teclado (el contador de la app seguía en 0/200) y ni `keyevent 66` ni tocar la flecha lo enviaron. Tampoco probé el botón «Enviar». Falta confirmarlo en un reloj real.
