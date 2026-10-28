@@ -826,7 +826,7 @@ fun WearApp(
                             AssistantInputScreen(
                                 text = assistantDraft,
                                 onTextChange = { assistantDraft = it },
-                                onSendClick = { submitAssistant(assistantDraft, fromInput = true) },
+                                onSendClick = { sent -> submitAssistant(sent, fromInput = true) },
                                 onBackClick = { currentScreen = ScreenType.ASSISTANT.name },
                                 contentPadding = contentPadding,
                                 listState = listState,
