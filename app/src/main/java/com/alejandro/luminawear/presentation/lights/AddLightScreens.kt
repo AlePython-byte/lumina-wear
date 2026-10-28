@@ -12,10 +12,15 @@ import androidx.wear.compose.material3.lazy.TransformationSpec
 import com.alejandro.luminawear.R
 import com.alejandro.luminawear.presentation.components.ActionButton
 import com.alejandro.luminawear.presentation.components.NavigationItem
+import com.alejandro.luminawear.presentation.models.Light
 import com.alejandro.luminawear.presentation.models.LightType
 import com.alejandro.luminawear.presentation.models.Room
+import com.alejandro.luminawear.presentation.models.lightName
+import com.alejandro.luminawear.presentation.scenes.CenteredText
 import com.alejandro.luminawear.presentation.scenes.SceneHeader
 import com.alejandro.luminawear.presentation.theme.LuminaSpacing
+import com.alejandro.luminawear.presentation.theme.LuminaTheme
+import com.alejandro.luminawear.presentation.theme.LuminaTypography
 
 /**
  * Añadir luz, paso 1 de 2: elegir habitación. `lightsInRoom` da cuántas luces tiene cada una;
@@ -99,6 +104,47 @@ fun AddLightTypeScreen(
         }
         item {
             ActionButton(stringResource(R.string.add_light_btn_back), this, transformationSpec, onBackClick, secondary = true)
+        }
+    }
+}
+
+/** Luz añadida: confirma con su nombre derivado y la deja lista para controlar o para añadir otra. */
+@Composable
+fun AddLightDoneScreen(
+    light: Light,
+    roomNameRes: Int,
+    onControlClick: () -> Unit,
+    onAddAnotherClick: () -> Unit,
+    contentPadding: PaddingValues,
+    listState: TransformingLazyColumnState,
+    transformationSpec: TransformationSpec
+) {
+    TransformingLazyColumn(
+        contentPadding = contentPadding,
+        state = listState,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(LuminaSpacing.xs)
+    ) {
+        item {
+            SceneHeader(stringResource(R.string.add_light_done_header).uppercase(), this, transformationSpec, showDemoLabel = false)
+        }
+        item {
+            CenteredText(
+                stringResource(R.string.add_light_done_title, lightName(light)), this, transformationSpec,
+                LuminaTypography.title, LuminaTheme.colors.accentContent
+            )
+        }
+        item {
+            CenteredText(
+                stringResource(R.string.add_light_done_body, stringResource(roomNameRes)), this, transformationSpec,
+                LuminaTypography.body, LuminaTheme.colors.muted
+            )
+        }
+        item {
+            ActionButton(stringResource(R.string.add_light_btn_control), this, transformationSpec, onControlClick)
+        }
+        item {
+            ActionButton(stringResource(R.string.add_light_btn_another), this, transformationSpec, onAddAnotherClick, secondary = true)
         }
     }
 }

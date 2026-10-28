@@ -44,6 +44,7 @@ import com.alejandro.luminawear.presentation.assistant.AssistantScreen
 import com.alejandro.luminawear.presentation.favorites.FavoritesEditScreen
 import com.alejandro.luminawear.presentation.favorites.FavoritesScreen
 import com.alejandro.luminawear.presentation.home.HomeScreen
+import com.alejandro.luminawear.presentation.lights.AddLightDoneScreen
 import com.alejandro.luminawear.presentation.lights.AddLightRoomScreen
 import com.alejandro.luminawear.presentation.lights.AddLightTypeScreen
 import com.alejandro.luminawear.presentation.lights.HubConnectingScreen
@@ -120,6 +121,9 @@ private val START_AT_TOP_KEYS = setOf(
     ScreenType.ASSISTANT_CONFIRM.name,
     ScreenType.ASSISTANT_DONE.name,
     ScreenType.ASSISTANT_ERROR.name,
+    ScreenType.ADD_LIGHT_ROOM.name,
+    ScreenType.ADD_LIGHT_TYPE.name,
+    ScreenType.ADD_LIGHT_DONE.name,
     hubStatusKey(HubStatus.CONNECTING),
     hubStatusKey(HubStatus.ERROR)
 )
@@ -127,7 +131,7 @@ private val START_AT_TOP_KEYS = setOf(
 enum class ScreenType {
     HOME, ROOMS, ROOM_DETAIL, LIGHT_CONTROL, SETTINGS, SCENES, SCENE_DETAIL, SCENE_ACTIVE, SUGGESTION, FAVORITES, FAVORITES_EDIT,
     ASSISTANT, ASSISTANT_INPUT, ASSISTANT_LOADING, ASSISTANT_CONFIRM, ASSISTANT_DONE, ASSISTANT_ERROR,
-    WELCOME, START_POINT, START_OVER, ADD_LIGHT_ROOM, ADD_LIGHT_TYPE
+    WELCOME, START_POINT, START_OVER, ADD_LIGHT_ROOM, ADD_LIGHT_TYPE, ADD_LIGHT_DONE
 }
 
 @Composable
@@ -163,6 +167,7 @@ fun WearApp(
     // Pantalla desde la que se abrió Añadir luz (Cancelar vuelve allí) y habitación elegida en su paso 1.
     var addLightOrigin by rememberSaveable { mutableStateOf(ScreenType.HOME.name) }
     var addLightRoomId by rememberSaveable { mutableStateOf("") }
+    var addedLightId by rememberSaveable { mutableStateOf("") }
     // Único dueño del tema; MainActivity entrega el valor guardado y persiste los cambios.
     var themeMode by rememberSaveable { mutableStateOf(initialThemeMode) }
     var selectedSceneId by rememberSaveable { mutableStateOf("") }
@@ -561,6 +566,7 @@ fun WearApp(
             ScreenType.START_OVER.name -> currentScreen = ScreenType.SETTINGS.name
             ScreenType.ADD_LIGHT_ROOM.name -> currentScreen = addLightOrigin
             ScreenType.ADD_LIGHT_TYPE.name -> currentScreen = ScreenType.ADD_LIGHT_ROOM.name
+            ScreenType.ADD_LIGHT_DONE.name -> currentScreen = addLightOrigin
             ScreenType.SUGGESTION.name -> currentScreen = ScreenType.HOME.name
             ScreenType.SCENES.name -> currentScreen = ScreenType.HOME.name
             ScreenType.SCENE_DETAIL.name -> {
@@ -872,9 +878,38 @@ fun WearApp(
                                 AddLightTypeScreen(
                                     roomNameRes = room.nameRes,
                                     types = lightStateHolder.addableTypes(),
-                                    // Añadir la luz llega en el siguiente paso.
-                                    onTypeClick = {},
+                                    onTypeClick = { type ->
+                                        val added = lightStateHolder.addLight(addLightRoomId, type)
+                                        if (added != null) {
+                                            addedLightId = added.id
+                                            currentScreen = ScreenType.ADD_LIGHT_DONE.name
+                                        } else {
+                                            // Ya no se puede (habitación llena o tipo no disponible): vuelve a elegir.
+                                            currentScreen = ScreenType.ADD_LIGHT_ROOM.name
+                                        }
+                                    },
                                     onBackClick = { currentScreen = ScreenType.ADD_LIGHT_ROOM.name },
+                                    contentPadding = contentPadding,
+                                    listState = listState,
+                                    transformationSpec = transformationSpec
+                                )
+                            }
+                        }
+                        ScreenType.ADD_LIGHT_DONE.name -> {
+                            val added = lightStateHolder.lightById(addedLightId)
+                            val addedRoom = added?.let { light -> appRooms.firstOrNull { it.id == light.roomId } }
+                            if (added == null || addedRoom == null) {
+                                LaunchedEffect(addedLightId) { currentScreen = addLightOrigin }
+                            } else {
+                                AddLightDoneScreen(
+                                    light = added,
+                                    roomNameRes = addedRoom.nameRes,
+                                    onControlClick = {
+                                        openedFromFavorites = false
+                                        selectedLightId = added.id
+                                        currentScreen = ScreenType.LIGHT_CONTROL.name
+                                    },
+                                    onAddAnotherClick = { currentScreen = ScreenType.ADD_LIGHT_ROOM.name },
                                     contentPadding = contentPadding,
                                     listState = listState,
                                     transformationSpec = transformationSpec

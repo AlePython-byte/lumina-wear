@@ -188,4 +188,9 @@
     <string name="add_light_type_hub">Lámpara con hub</string>
     <string name="add_light_type_hub_detail">Bombillo real</string>
     <string name="add_light_btn_back">Atrás</string>
+    <string name="add_light_done_header">Listo</string>
+    <string name="add_light_done_title">%1$s añadido.</string>
+    <string name="add_light_done_body">%1$s · apagada.</string>
+    <string name="add_light_btn_control">Controlar</string>
+    <string name="add_light_btn_another">Añadir otra</string>
 </resources>
