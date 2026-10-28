@@ -164,7 +164,7 @@
     <string name="start_point_empty">Empezar desde cero</string>
     <string name="start_point_empty_detail">Añade tus luces</string>
     <string name="home_empty_title">Aún no hay luces.</string>
-    <string name="home_empty_body">Pronto podrás añadir la primera.</string>
+    <string name="home_empty_body">Añade la primera para controlarla.</string>
     <string name="room_no_lights">Sin luces</string>
     <string name="room_living_in_sentence">Sala</string>
     <string name="room_bedroom_in_sentence">Dormitorio</string>
@@ -198,8 +198,8 @@
     <string name="add_light_btn_add">Añadir luz</string>
     <string name="add_light_btn_back">Atrás</string>
     <string name="add_light_done_header">Listo</string>
-    <string name="add_light_done_title">%1$s añadido.</string>
-    <string name="add_light_done_body">%1$s · apagada.</string>
+    <string name="add_light_done_title">Luz añadida.</string>
+    <string name="add_light_done_body">%1$s · %2$s · apagada.</string>
     <string name="add_light_btn_control">Controlar</string>
     <string name="add_light_btn_another">Añadir otra</string>
 </resources>
