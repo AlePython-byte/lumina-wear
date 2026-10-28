@@ -59,6 +59,7 @@ fun HomeScreen(
     onFavoritesClick: () -> Unit = {},
     onAssistantClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
+    onAddLightClick: () -> Unit = {},
     suggestion: Scene? = null,
     onSuggestionClick: () -> Unit = {},
     contentPadding: PaddingValues,
@@ -109,6 +110,9 @@ fun HomeScreen(
                     stringResource(R.string.home_empty_body), this, transformationSpec,
                     LuminaTypography.body, LuminaTheme.colors.muted
                 )
+            }
+            item {
+                ActionButton(stringResource(R.string.add_light_btn_add), this, transformationSpec, onAddLightClick)
             }
             item {
                 ActionButton(stringResource(R.string.access_settings), this, transformationSpec, onSettingsClick, secondary = true)

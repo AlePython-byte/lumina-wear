@@ -187,6 +187,7 @@
     <string name="add_light_type_tira_detail">Luz de apoyo</string>
     <string name="add_light_type_hub">Lámpara con hub</string>
     <string name="add_light_type_hub_detail">Bombillo real</string>
+    <string name="add_light_btn_add">Añadir luz</string>
     <string name="add_light_btn_back">Atrás</string>
     <string name="add_light_done_header">Listo</string>
     <string name="add_light_done_title">%1$s añadido.</string>

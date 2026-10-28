@@ -26,6 +26,7 @@ import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.TransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
 import com.alejandro.luminawear.R
+import com.alejandro.luminawear.presentation.components.ActionButton
 import com.alejandro.luminawear.presentation.models.Room
 import com.alejandro.luminawear.presentation.theme.ActionButtonTokens
 import com.alejandro.luminawear.presentation.theme.LuminaBorder
@@ -39,6 +40,7 @@ fun RoomsScreen(
     rooms: List<Room>,
     getLightsCount: (String) -> Pair<Int, Int>,
     onRoomClick: (String) -> Unit,
+    onAddLightClick: () -> Unit = {},
     onBackClick: () -> Unit,
     contentPadding: PaddingValues,
     listState: TransformingLazyColumnState,
@@ -105,6 +107,10 @@ fun RoomsScreen(
                     )
                 }
             }
+        }
+
+        item {
+            ActionButton(stringResource(R.string.add_light_btn_add), this, transformationSpec, onAddLightClick, secondary = true)
         }
 
         item {

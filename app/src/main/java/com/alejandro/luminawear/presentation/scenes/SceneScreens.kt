@@ -158,7 +158,8 @@ fun SceneDetailScreen(
     contentPadding: PaddingValues,
     listState: TransformingLazyColumnState,
     transformationSpec: TransformationSpec,
-    withoutLights: Boolean = false
+    withoutLights: Boolean = false,
+    onAddLightClick: () -> Unit = {}
 ) {
     TransformingLazyColumn(
         contentPadding = contentPadding,
@@ -183,6 +184,9 @@ fun SceneDetailScreen(
                     stringResource(R.string.scene_no_lights_body), this, transformationSpec,
                     LuminaTypography.body, LuminaTheme.colors.muted
                 )
+            }
+            item {
+                ActionButton(stringResource(R.string.add_light_btn_add), this, transformationSpec, onAddLightClick)
             }
             item {
                 ActionButton(stringResource(R.string.btn_back), this, transformationSpec, onScenesClick, secondary = true)
