@@ -173,4 +173,10 @@
     <string name="start_over_body">Your lights and favorites will be erased.</string>
     <string name="start_over_btn_confirm">Erase and start</string>
     <string name="assistant_btn_phrases">Quick phrases</string>
+    <string name="add_light_room_header">Add light · 1 of 2</string>
+    <plurals name="add_light_room_count">
+        <item quantity="one">%1$d light</item>
+        <item quantity="other">%1$d lights</item>
+    </plurals>
+    <string name="add_light_room_full">Full</string>
 </resources>

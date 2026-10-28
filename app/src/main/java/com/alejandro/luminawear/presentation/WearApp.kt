@@ -44,6 +44,7 @@ import com.alejandro.luminawear.presentation.assistant.AssistantScreen
 import com.alejandro.luminawear.presentation.favorites.FavoritesEditScreen
 import com.alejandro.luminawear.presentation.favorites.FavoritesScreen
 import com.alejandro.luminawear.presentation.home.HomeScreen
+import com.alejandro.luminawear.presentation.lights.AddLightRoomScreen
 import com.alejandro.luminawear.presentation.lights.HubConnectingScreen
 import com.alejandro.luminawear.presentation.lights.HubErrorScreen
 import com.alejandro.luminawear.presentation.lights.LightControlScreen
@@ -125,7 +126,7 @@ private val START_AT_TOP_KEYS = setOf(
 enum class ScreenType {
     HOME, ROOMS, ROOM_DETAIL, LIGHT_CONTROL, SETTINGS, SCENES, SCENE_DETAIL, SCENE_ACTIVE, SUGGESTION, FAVORITES, FAVORITES_EDIT,
     ASSISTANT, ASSISTANT_INPUT, ASSISTANT_LOADING, ASSISTANT_CONFIRM, ASSISTANT_DONE, ASSISTANT_ERROR,
-    WELCOME, START_POINT, START_OVER
+    WELCOME, START_POINT, START_OVER, ADD_LIGHT_ROOM
 }
 
 @Composable
@@ -158,6 +159,9 @@ fun WearApp(
     var houseGeneration by rememberSaveable { mutableStateOf(0) }
     var selectedRoomId by rememberSaveable { mutableStateOf("") }
     var selectedLightId by rememberSaveable { mutableStateOf("") }
+    // Pantalla desde la que se abrió Añadir luz (Cancelar vuelve allí) y habitación elegida en su paso 1.
+    var addLightOrigin by rememberSaveable { mutableStateOf(ScreenType.HOME.name) }
+    var addLightRoomId by rememberSaveable { mutableStateOf("") }
     // Único dueño del tema; MainActivity entrega el valor guardado y persiste los cambios.
     var themeMode by rememberSaveable { mutableStateOf(initialThemeMode) }
     var selectedSceneId by rememberSaveable { mutableStateOf("") }
@@ -554,6 +558,7 @@ fun WearApp(
             ScreenType.SETTINGS.name -> currentScreen = ScreenType.HOME.name
             ScreenType.START_POINT.name -> currentScreen = ScreenType.WELCOME.name
             ScreenType.START_OVER.name -> currentScreen = ScreenType.SETTINGS.name
+            ScreenType.ADD_LIGHT_ROOM.name -> currentScreen = addLightOrigin
             ScreenType.SUGGESTION.name -> currentScreen = ScreenType.HOME.name
             ScreenType.SCENES.name -> currentScreen = ScreenType.HOME.name
             ScreenType.SCENE_DETAIL.name -> {
@@ -837,6 +842,19 @@ fun WearApp(
                             StartOverScreen(
                                 onCancelClick = { currentScreen = ScreenType.SETTINGS.name },
                                 onConfirmClick = ::startOver,
+                                contentPadding = contentPadding,
+                                listState = listState,
+                                transformationSpec = transformationSpec
+                            )
+                        }
+                        ScreenType.ADD_LIGHT_ROOM.name -> {
+                            AddLightRoomScreen(
+                                rooms = appRooms,
+                                lightsInRoom = { roomId -> lightStateHolder.lightsInRoom(roomId).size },
+                                isFull = lightStateHolder::roomIsFull,
+                                // El paso 2 (tipo) llega en el siguiente paso; por ahora solo se recuerda la habitación.
+                                onRoomClick = { roomId -> addLightRoomId = roomId },
+                                onCancelClick = { currentScreen = addLightOrigin },
                                 contentPadding = contentPadding,
                                 listState = listState,
                                 transformationSpec = transformationSpec

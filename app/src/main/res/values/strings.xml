@@ -175,4 +175,10 @@
     <string name="start_over_body">Se borrarán tus luces y favoritos.</string>
     <string name="start_over_btn_confirm">Borrar y empezar</string>
     <string name="assistant_btn_phrases">Frases rápidas</string>
+    <string name="add_light_room_header">Añadir luz · 1 de 2</string>
+    <plurals name="add_light_room_count">
+        <item quantity="one">%1$d luz</item>
+        <item quantity="other">%1$d luces</item>
+    </plurals>
+    <string name="add_light_room_full">Completa</string>
 </resources>
