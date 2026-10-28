@@ -40,6 +40,13 @@ fun sceneRoomName(scene: Scene): String {
     return stringResource(room?.nameRes ?: R.string.scene_room_all)
 }
 
+/** Nombre de la habitación para usarlo dentro de una frase (en inglés va en minúscula). */
+@Composable
+private fun sceneRoomNameInSentence(scene: Scene): String {
+    val room = appRooms.firstOrNull { it.id == scene.roomId }
+    return stringResource(room?.nameInSentenceRes ?: R.string.scene_room_all)
+}
+
 /** "Sala · 30 %" con espacio (listas, tarjetas y sugerencia). */
 @Composable
 fun sceneRoomPercentSpaced(scene: Scene): String =
@@ -175,7 +182,7 @@ fun SceneDetailScreen(
                 val title = if (scene.roomId == null) {
                     stringResource(R.string.scene_no_lights_home)
                 } else {
-                    stringResource(R.string.scene_no_lights_room, sceneRoomName(scene))
+                    stringResource(R.string.scene_no_lights_room, sceneRoomNameInSentence(scene))
                 }
                 CenteredText(title, this, transformationSpec, LuminaTypography.title, LuminaTheme.colors.accentContent)
             }

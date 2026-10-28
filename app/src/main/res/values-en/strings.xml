@@ -164,6 +164,9 @@
     <string name="home_empty_title">No lights yet.</string>
     <string name="home_empty_body">You’ll be able to add the first one soon.</string>
     <string name="room_no_lights">No lights</string>
+    <string name="room_living_in_sentence">living room</string>
+    <string name="room_bedroom_in_sentence">bedroom</string>
+    <string name="room_study_in_sentence">study</string>
     <string name="scene_no_lights_room">No lights in %1$s.</string>
     <string name="scene_no_lights_home">No lights at home.</string>
     <string name="scene_no_lights_body">Add one to use this scene.</string>

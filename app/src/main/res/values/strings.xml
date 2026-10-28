@@ -166,6 +166,9 @@
     <string name="home_empty_title">Aún no hay luces.</string>
     <string name="home_empty_body">Pronto podrás añadir la primera.</string>
     <string name="room_no_lights">Sin luces</string>
+    <string name="room_living_in_sentence">Sala</string>
+    <string name="room_bedroom_in_sentence">Dormitorio</string>
+    <string name="room_study_in_sentence">Estudio</string>
     <string name="scene_no_lights_room">Sin luces en %1$s.</string>
     <string name="scene_no_lights_home">Sin luces en la casa.</string>
     <string name="scene_no_lights_body">Añade una para usar esta escena.</string>

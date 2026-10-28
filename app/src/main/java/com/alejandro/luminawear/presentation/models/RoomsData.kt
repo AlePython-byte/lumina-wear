@@ -2,7 +2,8 @@ package com.alejandro.luminawear.presentation.models
 
 import com.alejandro.luminawear.R
 
-data class Room(val id: String, val nameRes: Int)
+/** `nameInSentenceRes` es el nombre para usarlo dentro de una frase ("No lights in living room."). */
+data class Room(val id: String, val nameRes: Int, val nameInSentenceRes: Int)
 
 /**
  * Tipo de luz. `key` se guarda en la configuración; `nameRes` es el nombre base visible. Las luces
@@ -32,9 +33,9 @@ data class Light(val id: String, val roomId: String, val type: LightType, val nu
 }
 
 val appRooms = listOf(
-    Room("living_room", R.string.room_living),
-    Room("bedroom", R.string.room_bedroom),
-    Room("study", R.string.room_study)
+    Room("living_room", R.string.room_living, R.string.room_living_in_sentence),
+    Room("bedroom", R.string.room_bedroom, R.string.room_bedroom_in_sentence),
+    Room("study", R.string.room_study, R.string.room_study_in_sentence)
 )
 
 /** Las 8 luces de la casa demo, con los ids de siempre. */
