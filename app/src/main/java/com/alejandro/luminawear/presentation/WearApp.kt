@@ -50,6 +50,7 @@ import com.alejandro.luminawear.presentation.lights.AddLightTypeScreen
 import com.alejandro.luminawear.presentation.lights.HubConnectingScreen
 import com.alejandro.luminawear.presentation.lights.HubErrorScreen
 import com.alejandro.luminawear.presentation.lights.LightControlScreen
+import com.alejandro.luminawear.presentation.lights.RemoveLightScreen
 import com.alejandro.luminawear.presentation.models.demoLights
 import com.alejandro.luminawear.presentation.onboarding.StartOverScreen
 import com.alejandro.luminawear.presentation.onboarding.StartPointScreen
@@ -124,6 +125,7 @@ private val START_AT_TOP_KEYS = setOf(
     ScreenType.ADD_LIGHT_ROOM.name,
     ScreenType.ADD_LIGHT_TYPE.name,
     ScreenType.ADD_LIGHT_DONE.name,
+    ScreenType.REMOVE_LIGHT.name,
     hubStatusKey(HubStatus.CONNECTING),
     hubStatusKey(HubStatus.ERROR)
 )
@@ -131,7 +133,7 @@ private val START_AT_TOP_KEYS = setOf(
 enum class ScreenType {
     HOME, ROOMS, ROOM_DETAIL, LIGHT_CONTROL, SETTINGS, SCENES, SCENE_DETAIL, SCENE_ACTIVE, SUGGESTION, FAVORITES, FAVORITES_EDIT,
     ASSISTANT, ASSISTANT_INPUT, ASSISTANT_LOADING, ASSISTANT_CONFIRM, ASSISTANT_DONE, ASSISTANT_ERROR,
-    WELCOME, START_POINT, START_OVER, ADD_LIGHT_ROOM, ADD_LIGHT_TYPE, ADD_LIGHT_DONE
+    WELCOME, START_POINT, START_OVER, ADD_LIGHT_ROOM, ADD_LIGHT_TYPE, ADD_LIGHT_DONE, REMOVE_LIGHT
 }
 
 @Composable
@@ -355,6 +357,20 @@ fun WearApp(
         } else {
             currentScreen = ScreenType.ADD_LIGHT_ROOM.name
         }
+    }
+
+    /** Quita la luz elegida y vuelve al detalle de su habitación. Los favoritos se limpian solos. */
+    fun removeSelectedLight() {
+        val light = lightStateHolder.lightById(selectedLightId) ?: run {
+            currentScreen = ScreenType.ROOMS.name
+            return
+        }
+        lightStateHolder.removeLight(light.id)
+        // Sin luces Inicio cambia a su vista vacía: empieza arriba.
+        if (lightStateHolder.lights.isEmpty()) homeEpoch++
+        openedFromFavorites = false
+        selectedRoomId = light.roomId
+        currentScreen = ScreenType.ROOM_DETAIL.name
     }
 
     fun backFromAddLightType() {
@@ -587,6 +603,7 @@ fun WearApp(
             ScreenType.ADD_LIGHT_ROOM.name -> currentScreen = addLightOrigin
             ScreenType.ADD_LIGHT_TYPE.name -> backFromAddLightType()
             ScreenType.ADD_LIGHT_DONE.name -> currentScreen = addLightOrigin
+            ScreenType.REMOVE_LIGHT.name -> currentScreen = ScreenType.LIGHT_CONTROL.name
             ScreenType.SUGGESTION.name -> currentScreen = ScreenType.HOME.name
             ScreenType.SCENES.name -> currentScreen = ScreenType.HOME.name
             ScreenType.SCENE_DETAIL.name -> {
@@ -1048,6 +1065,24 @@ fun WearApp(
                                             currentScreen = ScreenType.ROOM_DETAIL.name
                                         }
                                     },
+                                    contentPadding = contentPadding,
+                                    listState = listState,
+                                    transformationSpec = transformationSpec,
+                                    onRemoveClick = { currentScreen = ScreenType.REMOVE_LIGHT.name }
+                                )
+                            }
+                        }
+                        ScreenType.REMOVE_LIGHT.name -> {
+                            val light = lightStateHolder.lightById(selectedLightId)
+                            val room = light?.let { l -> appRooms.firstOrNull { it.id == l.roomId } }
+                            if (light == null || room == null) {
+                                LaunchedEffect(selectedLightId) { currentScreen = ScreenType.ROOMS.name }
+                            } else {
+                                RemoveLightScreen(
+                                    light = light,
+                                    roomNameRes = room.nameRes,
+                                    onKeepClick = { currentScreen = ScreenType.LIGHT_CONTROL.name },
+                                    onRemoveClick = ::removeSelectedLight,
                                     contentPadding = contentPadding,
                                     listState = listState,
                                     transformationSpec = transformationSpec

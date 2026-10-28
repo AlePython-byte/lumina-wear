@@ -185,6 +185,11 @@
     <string name="add_light_type_tira_detail">Support light</string>
     <string name="add_light_type_hub">Lamp with hub</string>
     <string name="add_light_type_hub_detail">Real bulb</string>
+    <string name="remove_light_header">Remove light</string>
+    <string name="remove_light_title">Remove %1$s?</string>
+    <string name="remove_light_body">%1$s. It will leave scenes and favorites.</string>
+    <string name="remove_light_btn_keep">Keep</string>
+    <string name="remove_light_btn_remove">Remove</string>
     <string name="add_light_btn_add">Add light</string>
     <string name="add_light_btn_back">Back</string>
     <string name="add_light_done_header">Done</string>

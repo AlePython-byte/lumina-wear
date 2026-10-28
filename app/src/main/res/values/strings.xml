@@ -187,6 +187,11 @@
     <string name="add_light_type_tira_detail">Luz de apoyo</string>
     <string name="add_light_type_hub">Lámpara con hub</string>
     <string name="add_light_type_hub_detail">Bombillo real</string>
+    <string name="remove_light_header">Quitar luz</string>
+    <string name="remove_light_title">¿Quitar %1$s?</string>
+    <string name="remove_light_body">%1$s. Saldrá de escenas y favoritos.</string>
+    <string name="remove_light_btn_keep">Conservar</string>
+    <string name="remove_light_btn_remove">Quitar</string>
     <string name="add_light_btn_add">Añadir luz</string>
     <string name="add_light_btn_back">Atrás</string>
     <string name="add_light_done_header">Listo</string>
