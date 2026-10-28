@@ -130,13 +130,13 @@ fun AddLightDoneScreen(
         }
         item {
             CenteredText(
-                stringResource(R.string.add_light_done_title, lightName(light)), this, transformationSpec,
+                stringResource(R.string.add_light_done_title), this, transformationSpec,
                 LuminaTypography.title, LuminaTheme.colors.accentContent
             )
         }
         item {
             CenteredText(
-                stringResource(R.string.add_light_done_body, stringResource(roomNameRes)), this, transformationSpec,
+                stringResource(R.string.add_light_done_body, lightName(light), stringResource(roomNameRes)), this, transformationSpec,
                 LuminaTypography.body, LuminaTheme.colors.muted
             )
         }

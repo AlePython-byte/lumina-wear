@@ -20,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -129,12 +130,14 @@ fun AssistantScreen(
 fun AssistantInputScreen(
     text: String,
     onTextChange: (String) -> Unit,
-    onSendClick: () -> Unit,
+    onSendClick: (String) -> Unit,
     onBackClick: () -> Unit,
     contentPadding: PaddingValues,
     listState: TransformingLazyColumnState,
     transformationSpec: TransformationSpec
 ) {
+    // Los items de la lista perezosa pueden conservar lambdas de una composición anterior: se lee siempre el texto vigente.
+    val currentText by rememberUpdatedState(text)
     TransformingLazyColumn(
         contentPadding = contentPadding,
         state = listState,
@@ -154,8 +157,9 @@ fun AssistantInputScreen(
                 onValueChange = { value ->
                     // Enter del teclado: se envía en vez de guardar un salto de línea invisible.
                     if ('\n' in value) {
-                        onTextChange(value.replace('\n', ' ').trim().take(ASSISTANT_MAX_TEXT))
-                        onSendClick()
+                        val sent = value.replace('\n', ' ').trim().take(ASSISTANT_MAX_TEXT)
+                        onTextChange(sent)
+                        onSendClick(sent)
                     } else {
                         onTextChange(value.take(ASSISTANT_MAX_TEXT))
                     }
@@ -166,7 +170,7 @@ fun AssistantInputScreen(
                     capitalization = KeyboardCapitalization.Sentences,
                     imeAction = ImeAction.Send
                 ),
-                keyboardActions = KeyboardActions(onSend = { onSendClick() }),
+                keyboardActions = KeyboardActions(onSend = { onSendClick(currentText) }),
                 interactionSource = interactionSource,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -209,7 +213,7 @@ fun AssistantInputScreen(
             )
         }
         item {
-            ActionButton(stringResource(R.string.assistant_btn_send), this, transformationSpec, onSendClick)
+            ActionButton(stringResource(R.string.assistant_btn_send), this, transformationSpec, { onSendClick(currentText) })
         }
         item {
             ActionButton(stringResource(R.string.btn_back), this, transformationSpec, onBackClick, secondary = true)
