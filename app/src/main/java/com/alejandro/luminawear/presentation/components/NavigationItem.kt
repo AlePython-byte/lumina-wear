@@ -33,14 +33,15 @@ fun NavigationItem(
     scope: TransformingLazyColumnItemScope,
     transformationSpec: TransformationSpec,
     onClick: () -> Unit,
-    selected: Boolean? = null
+    selected: Boolean? = null,
+    enabled: Boolean = true
 ) {
     val isSelected = selected == true
     val shape = RoundedCornerShape(NavigationItemTokens.radius)
     val interaction = if (selected == null) {
-        Modifier.clickable(role = Role.Button, onClick = onClick)
+        Modifier.clickable(enabled = enabled, role = Role.Button, onClick = onClick)
     } else {
-        Modifier.selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
+        Modifier.selectable(selected = selected, enabled = enabled, role = Role.RadioButton, onClick = onClick)
     }
     Column(
         verticalArrangement = Arrangement.Center,
@@ -49,7 +50,13 @@ fun NavigationItem(
             .transformedHeight(scope, transformationSpec)
             .heightIn(min = NavigationItemTokens.optionMinHeight)
             .clip(shape)
-            .background(if (isSelected) NavigationItemTokens.containerSelected else NavigationItemTokens.container)
+            .background(
+                when {
+                    !enabled -> NavigationItemTokens.containerDisabled
+                    isSelected -> NavigationItemTokens.containerSelected
+                    else -> NavigationItemTokens.container
+                }
+            )
             .border(
                 LuminaBorder.width,
                 if (isSelected) NavigationItemTokens.borderSelected else NavigationItemTokens.border,
@@ -61,7 +68,7 @@ fun NavigationItem(
         Text(
             text = title,
             style = LuminaTypography.button,
-            color = NavigationItemTokens.content
+            color = if (enabled) NavigationItemTokens.content else NavigationItemTokens.contentDisabled
         )
         Text(
             text = detail,

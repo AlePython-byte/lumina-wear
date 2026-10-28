@@ -40,6 +40,13 @@ fun sceneRoomName(scene: Scene): String {
     return stringResource(room?.nameRes ?: R.string.scene_room_all)
 }
 
+/** Nombre de la habitación para usarlo dentro de una frase (en inglés va en minúscula). */
+@Composable
+private fun sceneRoomNameInSentence(scene: Scene): String {
+    val room = appRooms.firstOrNull { it.id == scene.roomId }
+    return stringResource(room?.nameInSentenceRes ?: R.string.scene_room_all)
+}
+
 /** "Sala · 30 %" con espacio (listas, tarjetas y sugerencia). */
 @Composable
 fun sceneRoomPercentSpaced(scene: Scene): String =
@@ -158,7 +165,8 @@ fun SceneDetailScreen(
     contentPadding: PaddingValues,
     listState: TransformingLazyColumnState,
     transformationSpec: TransformationSpec,
-    withoutLights: Boolean = false
+    withoutLights: Boolean = false,
+    onAddLightClick: () -> Unit = {}
 ) {
     TransformingLazyColumn(
         contentPadding = contentPadding,
@@ -174,7 +182,7 @@ fun SceneDetailScreen(
                 val title = if (scene.roomId == null) {
                     stringResource(R.string.scene_no_lights_home)
                 } else {
-                    stringResource(R.string.scene_no_lights_room, sceneRoomName(scene))
+                    stringResource(R.string.scene_no_lights_room, sceneRoomNameInSentence(scene))
                 }
                 CenteredText(title, this, transformationSpec, LuminaTypography.title, LuminaTheme.colors.accentContent)
             }
@@ -183,6 +191,9 @@ fun SceneDetailScreen(
                     stringResource(R.string.scene_no_lights_body), this, transformationSpec,
                     LuminaTypography.body, LuminaTheme.colors.muted
                 )
+            }
+            item {
+                ActionButton(stringResource(R.string.add_light_btn_add), this, transformationSpec, onAddLightClick)
             }
             item {
                 ActionButton(stringResource(R.string.btn_back), this, transformationSpec, onScenesClick, secondary = true)

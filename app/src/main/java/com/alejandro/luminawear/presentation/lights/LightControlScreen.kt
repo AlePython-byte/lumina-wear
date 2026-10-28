@@ -41,6 +41,7 @@ import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.TransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
 import com.alejandro.luminawear.R
+import com.alejandro.luminawear.presentation.components.ActionButton
 import com.alejandro.luminawear.presentation.models.Light
 import com.alejandro.luminawear.presentation.models.lightName
 import com.alejandro.luminawear.presentation.theme.ActionButtonTokens
@@ -63,7 +64,8 @@ fun LightControlScreen(
     onBackClick: () -> Unit,
     contentPadding: PaddingValues,
     listState: TransformingLazyColumnState,
-    transformationSpec: TransformationSpec
+    transformationSpec: TransformationSpec,
+    onRemoveClick: () -> Unit = {}
 ) {
     val roomName = stringResource(roomNameRes)
     val title = stringResource(R.string.light_control_title, lightName(light), roomName).uppercase()
@@ -263,6 +265,10 @@ fun LightControlScreen(
                     style = LuminaTypography.button
                 )
             }
+        }
+
+        item {
+            ActionButton(stringResource(R.string.remove_light_header), this, transformationSpec, onRemoveClick, secondary = true)
         }
     }
 }

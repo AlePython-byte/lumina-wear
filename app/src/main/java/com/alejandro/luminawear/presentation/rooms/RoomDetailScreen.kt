@@ -26,6 +26,7 @@ import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.TransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
 import com.alejandro.luminawear.R
+import com.alejandro.luminawear.presentation.components.ActionButton
 import com.alejandro.luminawear.presentation.models.Light
 import com.alejandro.luminawear.presentation.models.lightName
 import com.alejandro.luminawear.presentation.state.DEFAULT_REMEMBERED_BRIGHTNESS
@@ -44,6 +45,8 @@ fun RoomDetailScreen(
     lights: List<Light>,
     lightStateHolder: LightStateHolder,
     onLightClick: (String) -> Unit,
+    /** null si la habitación está llena: no se ofrece Añadir luz. */
+    onAddLightClick: (() -> Unit)? = null,
     onBackClick: () -> Unit,
     contentPadding: PaddingValues,
     listState: TransformingLazyColumnState,
@@ -128,6 +131,12 @@ fun RoomDetailScreen(
                         color = if (isOn) StatusChipTokens.contentActive else StatusChipTokens.contentInactive
                     )
                 }
+            }
+        }
+
+        if (onAddLightClick != null) {
+            item {
+                ActionButton(stringResource(R.string.add_light_btn_add), this, transformationSpec, onAddLightClick, secondary = true)
             }
         }
 

@@ -25,16 +25,26 @@ private val demoInitiallyOn = mapOf(
     "living_plafon" to 72, "living_lampara" to 45, "bed_techo" to 60, "bed_mesa" to 30, "study_escritorio" to 80
 )
 
-/** Estado inicial de una luz: el de la demo si es una de sus encendidas; si no, apagada con 50 %. */
-fun initialLightState(id: String): LightState {
-    val brightness = demoInitiallyOn[id]
-    return if (brightness != null) LightState(isOn = true, brightness = brightness)
-    else LightState(isOn = false, brightness = DEFAULT_REMEMBERED_BRIGHTNESS)
-}
+/** Límite de luces por habitación. */
+const val MAX_LIGHTS_PER_ROOM = 6
+
+private val offLightState = LightState(isOn = false, brightness = DEFAULT_REMEMBERED_BRIGHTNESS)
 
 /** Estado inicial de cada luz de la lista (al cargar la casa demo). */
 fun defaultLightStates(lights: List<Light>): Map<String, LightState> =
-    lights.associate { it.id to initialLightState(it.id) }
+    lights.associate { light ->
+        val brightness = demoInitiallyOn[light.id]
+        light.id to if (brightness != null) LightState(isOn = true, brightness = brightness) else offLightState
+    }
+
+/**
+ * Estado inicial al abrir la app: el de la demo solo si la casa contiene toda la demo; con otra
+ * configuración (por ejemplo, una Lámpara con hub añadida a mano) todas nacen apagadas con 50 %.
+ */
+private fun initialStatesFor(config: LightsConfig): Map<String, LightState> {
+    val hasWholeDemo = DEMO_LIGHTS_CONFIG.lights.all { it in config.lights }
+    return if (hasWholeDemo) defaultLightStates(config.lights) else config.lights.associate { it.id to offLightState }
+}
 
 /** Formato de texto: id1:1:72,id2:0:50 (usado por el Saver y por el snapshot de Deshacer). */
 fun serializeLightStates(states: Map<String, LightState>): String =
@@ -76,7 +86,8 @@ class LightStateHolder(
         private set
 
     private val _states = mutableStateMapOf<String, LightState>().apply {
-        initialConfig.lights.forEach { put(it.id, initialStates[it.id] ?: initialLightState(it.id)) }
+        val fallback = initialStatesFor(initialConfig)
+        initialConfig.lights.forEach { put(it.id, initialStates[it.id] ?: fallback.getValue(it.id)) }
     }
 
     val lights: List<Light> get() = config.lights
@@ -88,6 +99,11 @@ class LightStateHolder(
 
     fun addableTypes(): List<LightType> = config.addableTypes()
 
+    /** true si la habitación ya tiene el máximo de luces y no admite más. */
+    fun roomIsFull(roomId: String): Boolean = lightsInRoom(roomId).size >= MAX_LIGHTS_PER_ROOM
+
+    fun canAddToRoom(roomId: String): Boolean = !roomIsFull(roomId)
+
     fun lightById(id: String): Light? = config.lights.firstOrNull { it.id == id }
 
     fun lightsInRoom(roomId: String): List<Light> = config.lights.filter { it.roomId == roomId }
@@ -95,10 +111,14 @@ class LightStateHolder(
     /** true si la escena no tiene ninguna luz sobre la que actuar (su habitación, o la casa, está vacía). */
     fun isSceneWithoutLights(scene: Scene): Boolean = sceneLights(scene, config.lights).isEmpty()
 
-    /** Añade una luz apagada con 50 % recordado; el resto conserva su estado. Devuelve la luz o null. */
+    /**
+     * Añade una luz apagada con 50 % recordado (también la del hub); el resto conserva su estado.
+     * Devuelve la luz, o null si no se puede (tipo no disponible o habitación llena).
+     */
     fun addLight(roomId: String, type: LightType): Light? {
+        if (roomIsFull(roomId)) return null
         val (next, light) = config.withLight(roomId, type) ?: return null
-        _states[light.id] = LightState(isOn = false, brightness = DEFAULT_REMEMBERED_BRIGHTNESS)
+        _states[light.id] = offLightState
         updateConfig(next)
         return light
     }

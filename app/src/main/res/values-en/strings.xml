@@ -164,6 +164,9 @@
     <string name="home_empty_title">No lights yet.</string>
     <string name="home_empty_body">You’ll be able to add the first one soon.</string>
     <string name="room_no_lights">No lights</string>
+    <string name="room_living_in_sentence">living room</string>
+    <string name="room_bedroom_in_sentence">bedroom</string>
+    <string name="room_study_in_sentence">study</string>
     <string name="scene_no_lights_room">No lights in %1$s.</string>
     <string name="scene_no_lights_home">No lights at home.</string>
     <string name="scene_no_lights_body">Add one to use this scene.</string>
@@ -173,4 +176,28 @@
     <string name="start_over_body">Your lights and favorites will be erased.</string>
     <string name="start_over_btn_confirm">Erase and start</string>
     <string name="assistant_btn_phrases">Quick phrases</string>
+    <string name="add_light_room_header">Add light · 1 of 2</string>
+    <plurals name="add_light_room_count">
+        <item quantity="one">%1$d light</item>
+        <item quantity="other">%1$d lights</item>
+    </plurals>
+    <string name="add_light_room_full">Full</string>
+    <string name="add_light_type_header">%1$s · 2 of 2</string>
+    <string name="add_light_type_plafon_detail">Overhead light</string>
+    <string name="add_light_type_lampara_detail">Table light</string>
+    <string name="add_light_type_tira_detail">Support light</string>
+    <string name="add_light_type_hub">Lamp with hub</string>
+    <string name="add_light_type_hub_detail">Real bulb</string>
+    <string name="remove_light_header">Remove light</string>
+    <string name="remove_light_title">Remove %1$s?</string>
+    <string name="remove_light_body">%1$s. It will leave scenes and favorites.</string>
+    <string name="remove_light_btn_keep">Keep</string>
+    <string name="remove_light_btn_remove">Remove</string>
+    <string name="add_light_btn_add">Add light</string>
+    <string name="add_light_btn_back">Back</string>
+    <string name="add_light_done_header">Done</string>
+    <string name="add_light_done_title">%1$s added.</string>
+    <string name="add_light_done_body">%1$s · off.</string>
+    <string name="add_light_btn_control">Control</string>
+    <string name="add_light_btn_another">Add another</string>
 </resources>
