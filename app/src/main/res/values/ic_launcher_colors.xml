@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Valores copiados de LuminaPalette (Color.kt): black y lime. -->
+    <color name="ic_launcher_bg_color">#000000</color>
+    <color name="ic_launcher_lime">#C8FF37</color>
+</resources>
