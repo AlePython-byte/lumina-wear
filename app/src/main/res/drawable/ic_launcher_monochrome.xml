@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Cristal con la "L" como hueco (evenOdd). El sistema tiñe esta capa. -->
+    <path
+        android:fillColor="@color/ic_launcher_lime"
+        android:fillType="evenOdd"
+        android:pathData="M45,61.6 A18,18 0 1 1 63,61.6 L63,68 L45,68 Z M47.7,37.5 A1.8,1.8 0 0 1 51.3,37.5 V50.2 H58.5 A1.8,1.8 0 0 1 58.5,53.8 H49.5 A1.8,1.8 0 0 1 47.7,52 Z" />
+    <!-- Base -->
+    <path
+        android:fillColor="@color/ic_launcher_lime"
+        android:pathData="M47.5,71 H60.5 A1.5,1.5 0 0 1 62,72.5 A1.5,1.5 0 0 1 60.5,74 H47.5 A1.5,1.5 0 0 1 46,72.5 A1.5,1.5 0 0 1 47.5,71 Z" />
+    <path
+        android:fillColor="@color/ic_launcher_lime"
+        android:pathData="M50.5,76 H57.5 A1.5,1.5 0 0 1 59,77.5 A1.5,1.5 0 0 1 57.5,79 H50.5 A1.5,1.5 0 0 1 49,77.5 A1.5,1.5 0 0 1 50.5,76 Z" />
+</vector>
