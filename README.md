@@ -88,3 +88,41 @@ La demo se hace con la compilación de **debug**.
 - `:app:assembleRelease` compila, pero el APK sale **sin firmar** (no hay configuración de firma en el proyecto), así que no se instala tal cual. Tampoco tiene minificación activada.
 - Las compilaciones de debug permiten HTTP sin cifrar al hub local en `10.0.2.2` (emulador) y en las IPs de la LAN y del hotspot que figuran en `app/src/debug/res/xml/network_security_config.xml`. El release solo permite `10.0.2.2` (`app/src/main/res/xml/network_security_config.xml`): no sirve para hablar con un hub en la red de casa. Todo lo demás exige HTTPS.
 - El extra `hub_url` para fijar la dirección del hub sin recompilar solo funciona en debug.
+
+## Hub local (bombillo real)
+
+El hub es un puente HTTP en Python entre la app y el bombillo. Se corre desde la raíz del repo:
+
+```
+python hub/hub.py                  # modo simulado (por defecto), solo en 127.0.0.1:8787
+python hub/hub.py --mode cozylife  # bombillo CozyLife real (requiere hub/config.json, que no se sube a Git)
+python hub/hub.py --host 0.0.0.0   # también escucha en la red, para un reloj físico
+```
+
+- En el modo simulado, http://localhost:8787 muestra un bombillo virtual en el navegador.
+- El emulador usa `http://10.0.2.2:8787` (el `127.0.0.1` del PC), así que el modo por defecto basta.
+- El hub **no tiene autenticación**: usa `--host 0.0.0.0` solo en una red de confianza y vuelve al valor por defecto al terminar.
+- Todo el detalle (firewall, `config.json`, endpoints, qué hacer si el bombillo no responde) está en [`hub/README.md`](hub/README.md). El procedimiento para un reloj físico está en su sección [«Reloj físico»](hub/README.md#reloj-físico), que solo vale para compilaciones de debug y aún no se ha probado con un reloj real.
+
+## Asistente
+
+1. **Reglas locales primero** (español e inglés): apagar o encender todo, escenas por nombre, una luz por nombre y «al N %». Funcionan sin internet.
+2. **Si no las entienden**, la app consulta un Worker de Cloudflare que guarda la clave de Gemini; la app nunca la contiene.
+3. La respuesta se valida en el servidor y en la app, y **nada se ejecuta sin confirmar**; después se puede deshacer.
+
+**Límite conocido:** el token de la app viaja dentro del APK y se puede extraer. Frena llamadas casuales, pero no autentica a un usuario; lo acotan los topes de entrada y salida y los límites de los planes gratuitos. Detalle y qué hacer si se filtra: [`worker/README.md`](worker/README.md#seguridad-límites-conocidos).
+
+## Estado y límites
+
+Probado en emulador: control de luces, escenas, favoritos, ajustes, tema y idiomas, asistente, primer uso, gestión de luces y el bombillo real desde la app. Pendiente o no probado:
+
+- Prueba en un **reloj físico**.
+- **TalkBack** real (solo se revisó el árbol de accesibilidad).
+- Fuente a 1,3 con la app en **inglés**.
+- Entrada por **voz** (no implementada).
+
+La tabla completa está en [«Estado y límites»](docs/documentacion.md#7-estado-y-límites).
+
+## Licencias
+
+La tipografía **Roboto Flex** se distribuye bajo la SIL Open Font License 1.1; el texto está en [`docs/licenses/OFL.txt`](docs/licenses/OFL.txt). El proyecto no declara una licencia propia.
