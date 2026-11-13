@@ -131,6 +131,8 @@ fun AssistantInputScreen(
     text: String,
     onTextChange: (String) -> Unit,
     onSendClick: (String) -> Unit,
+    onMicClick: () -> Unit,
+    micUnavailable: Boolean,
     onBackClick: () -> Unit,
     contentPadding: PaddingValues,
     listState: TransformingLazyColumnState,
@@ -214,6 +216,27 @@ fun AssistantInputScreen(
         }
         item {
             ActionButton(stringResource(R.string.assistant_btn_send), this, transformationSpec, { onSendClick(currentText) })
+        }
+        item {
+            ActionButton(
+                stringResource(R.string.access_voice), this, transformationSpec, onMicClick,
+                secondary = true,
+                description = stringResource(R.string.access_voice)
+            )
+        }
+        if (micUnavailable) {
+            item {
+                Text(
+                    text = stringResource(R.string.assistant_voice_unavailable),
+                    style = LuminaTypography.label,
+                    color = LuminaTheme.colors.muted,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .transformedHeight(this, transformationSpec)
+                        .semantics { liveRegion = LiveRegionMode.Polite }
+                )
+            }
         }
         item {
             ActionButton(stringResource(R.string.btn_back), this, transformationSpec, onBackClick, secondary = true)

@@ -1,5 +1,8 @@
 package com.alejandro.luminawear.presentation
 
+import android.app.Activity
+import android.content.Intent
+import android.speech.RecognizerIntent
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -210,6 +213,18 @@ fun WearApp(
     // Asistente: borrador del campo de texto, pedido en curso, propuesta validada y error.
     val assistantClient = remember { AssistantClient(BuildConfig.ASSISTANT_URL, BuildConfig.ASSISTANT_TOKEN) }
     var assistantDraft by rememberSaveable { mutableStateOf("") }
+    // Dictado: solo true si falló el lanzamiento del reconocedor del sistema.
+    var assistantMicUnavailable by remember { mutableStateOf(false) }
+    val speechLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode != Activity.RESULT_OK) return@rememberLauncherForActivityResult
+        val heard = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
+            ?.replace('\n', ' ')?.replace('\r', ' ')?.trim().orEmpty()
+        if (heard.isEmpty()) return@rememberLauncherForActivityResult
+        val base = assistantDraft.trim()
+        assistantDraft = (if (base.isEmpty()) heard else "$base $heard").take(ASSISTANT_MAX_TEXT)
+    }
     var assistantRequest by rememberSaveable { mutableStateOf("") }
     var assistantFromInput by rememberSaveable { mutableStateOf(false) }
     var assistantReply by rememberSaveable { mutableStateOf("") }
@@ -827,6 +842,22 @@ fun WearApp(
                                 text = assistantDraft,
                                 onTextChange = { assistantDraft = it },
                                 onSendClick = { sent -> submitAssistant(sent, fromInput = true) },
+                                onMicClick = {
+                                    assistantMicUnavailable = false
+                                    val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                        putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                                        putExtra(RecognizerIntent.EXTRA_LANGUAGE, if (language == AppLanguage.EN) "en-US" else "es-CO")
+                                        putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+                                    }
+                                    try {
+                                        speechLauncher.launch(intent)
+                                    } catch (e: Exception) {
+                                        // ActivityNotFoundException u otro fallo al lanzar: se sigue escribiendo.
+                                        Log.w("AssistantVoice", "No se pudo lanzar el dictado: ${e.javaClass.simpleName}")
+                                        assistantMicUnavailable = true
+                                    }
+                                },
+                                micUnavailable = assistantMicUnavailable,
                                 onBackClick = { currentScreen = ScreenType.ASSISTANT.name },
                                 contentPadding = contentPadding,
                                 listState = listState,
@@ -1735,7 +1766,7 @@ fun PreviewAssistantDark() = FavoritesPreviewHost(ThemeMode.DARK) { padding, sta
 @Composable
 fun PreviewAssistantInputLight() = FavoritesPreviewHost(ThemeMode.LIGHT) { padding, state, spec ->
     AssistantInputScreen(
-        text = "", onTextChange = {}, onSendClick = {}, onBackClick = {},
+        text = "", onTextChange = {}, onSendClick = {}, onMicClick = {}, micUnavailable = false, onBackClick = {},
         contentPadding = padding, listState = state, transformationSpec = spec
     )
 }
@@ -1744,7 +1775,7 @@ fun PreviewAssistantInputLight() = FavoritesPreviewHost(ThemeMode.LIGHT) { paddi
 @Composable
 fun PreviewAssistantInputDark() = FavoritesPreviewHost(ThemeMode.DARK) { padding, state, spec ->
     AssistantInputScreen(
-        text = "Apaga el escritorio y la tira", onTextChange = {}, onSendClick = {}, onBackClick = {},
+        text = "Apaga el escritorio y la tira", onTextChange = {}, onSendClick = {}, onMicClick = {}, micUnavailable = true, onBackClick = {},
         contentPadding = padding, listState = state, transformationSpec = spec
     )
 }
