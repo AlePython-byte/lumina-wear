@@ -215,7 +215,11 @@ fun WearApp(
     var assistantDraft by rememberSaveable { mutableStateOf("") }
     // Dictado: solo true si falló el lanzamiento del reconocedor del sistema.
     var assistantMicUnavailable by remember { mutableStateOf(false) }
-    val speechLauncher = rememberLauncherForActivityResult(
+    // El aviso no sobrevive a salir de la pantalla de entrada.
+    LaunchedEffect(currentScreen) {
+        if (currentScreen != ScreenType.ASSISTANT_INPUT.name) assistantMicUnavailable = false
+    }
+    val speechLauncher =rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode != Activity.RESULT_OK) return@rememberLauncherForActivityResult
@@ -840,7 +844,7 @@ fun WearApp(
                         ScreenType.ASSISTANT_INPUT.name -> {
                             AssistantInputScreen(
                                 text = assistantDraft,
-                                onTextChange = { assistantDraft = it },
+                                onTextChange = { assistantDraft = it; assistantMicUnavailable = false },
                                 onSendClick = { sent -> submitAssistant(sent, fromInput = true) },
                                 onMicClick = {
                                     assistantMicUnavailable = false
