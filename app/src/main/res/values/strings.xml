@@ -128,6 +128,7 @@
     <string name="assistant_input_desc">Orden para las luces, máximo %1$d caracteres</string>
     <string name="assistant_input_counter">%1$d/%2$d</string>
     <string name="assistant_btn_send">Enviar</string>
+    <string name="assistant_voice_unavailable">El dictado no está disponible en este reloj</string>
     <string name="assistant_loading_header">Consultando</string>
     <string name="assistant_loading_title">Entendiendo tu pedido</string>
     <string name="assistant_confirm_header">Confirmar</string>

@@ -126,6 +126,7 @@
     <string name="assistant_input_desc">Light command, up to %1$d characters</string>
     <string name="assistant_input_counter">%1$d/%2$d</string>
     <string name="assistant_btn_send">Send</string>
+    <string name="assistant_voice_unavailable">Dictation is not available on this watch</string>
     <string name="assistant_loading_header">Asking</string>
     <string name="assistant_loading_title">Understanding your request</string>
     <string name="assistant_confirm_header">Confirm</string>
