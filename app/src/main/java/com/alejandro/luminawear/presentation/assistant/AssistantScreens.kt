@@ -125,6 +125,9 @@ fun AssistantScreen(
     }
 }
 
+/** Último item (Volver) de la pantalla de entrada con el aviso visible: cabecera, campo, contador, Enviar, Voz, aviso, Volver. */
+private const val LAST_ITEM_INDEX = 6
+
 /** Campo de texto (máx. ASSISTANT_MAX_TEXT) con contador, Enviar y Volver. */
 @Composable
 fun AssistantInputScreen(
@@ -140,6 +143,13 @@ fun AssistantInputScreen(
 ) {
     // Los items de la lista perezosa pueden conservar lambdas de una composición anterior: se lee siempre el texto vigente.
     val currentText by rememberUpdatedState(text)
+    // Al aparecer el aviso de dictado, la lista baja hasta el final (Voz, aviso y Volver) para que se vea completo.
+    LaunchedEffect(micUnavailable) {
+        if (micUnavailable) {
+            withFrameNanos { } // espera a que el item del aviso esté medido
+            listState.animateScrollToItem(LAST_ITEM_INDEX)
+        }
+    }
     TransformingLazyColumn(
         contentPadding = contentPadding,
         state = listState,
